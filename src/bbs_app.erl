@@ -13,6 +13,8 @@
 
 -export([start/2, stop/1]).
 
+-export([new_bubble/1, new_bubble_test/0]).
+
 start(_StartType, _StartArgs) ->
     register(bbs, self()),
     % Create ontologies index
@@ -27,17 +29,28 @@ start(_StartType, _StartArgs) ->
 	       end,
     bbs_ontology:register_ontologies(Ontolist),
 
-    %
-    _BubSpecs = #agent{name = <<"bubble">>, aid_entries = [],
-		      startup_onts =
-			     [
-                {ontology, <<"bbs:bubble">>, []}
-                ]},
                
     % Start application supervisor
     bbs_sup:start_link().
 
 stop(_State) -> ok.
 
+%% API
+
+new_bubble(#agent{} = Bubble_specs) ->
+    supervisor:start_child(bubbles_sup, [Bubble_specs]).
+
+
 %% internal functions
 
+
+
+%% Unit tests
+
+new_bubble_test() ->
+    BubSpecs = #agent{name = <<"bubble">>, aid_entries = [],
+		      startup_onts =
+			     [
+                {ontology, <<"bbs:bubble">>, []}
+                ]},
+    new_bubble(BubSpecs).

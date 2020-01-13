@@ -29,7 +29,7 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [],
+    ChildSpecs = [{bubbles_sup, {bbs_agent_sup, start_link, []}, permanent, infinity, supervisor, [bbs_agent_sup]}],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions

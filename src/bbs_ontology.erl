@@ -9,7 +9,7 @@
 -module(bbs_ontology).
 -author("Yan").
 
--include_lib("erlog_bbs/include/erlog_int.hrl").
+-include_lib("erlog/include/erlog_int.hrl").
 -include("bbs.hrl").
 -include("utils.hrl").
 
