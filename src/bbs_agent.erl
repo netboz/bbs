@@ -12,6 +12,7 @@
 -behaviour(gen_statem).
 
 -include("bbs.hrl").
+-include("utils.hrl").
 
 %% API
 -export([start_link/1]).
@@ -31,8 +32,8 @@
 %% @doc Creates a gen_statem process which calls Module:init/1 to
 %% initialize. To ensure a synchronized start-up procedure, this
 %% function does not return until Module:init/1 has returned.
-start_link(#agent{} = _AgentSpecs) ->
-  gen_statem:start_link(?MODULE, [], []).
+start_link(#agent{} = AgentSpecs) ->
+  gen_statem:start_link(?MODULE, AgentSpecs, []).
 
 %%%===================================================================
 %%% gen_statem callbacks
@@ -42,7 +43,8 @@ start_link(#agent{} = _AgentSpecs) ->
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
-init([]) ->
+init(AgentSpecs) ->
+  ?INFO_MSG("Initialising Agent :~p",[AgentSpecs#agent.name]),
   {ok, state_name, #bbs_agent_state{}}.
 
 %% @private
