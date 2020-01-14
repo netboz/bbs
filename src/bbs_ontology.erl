@@ -14,7 +14,7 @@
 -include("utils.hrl").
 
 %% API
--export([register_ontologies/1, get_registered_ont_desc/1]).
+-export([register_ontologies/1, get_registered_ont_desc/1, initialise_ontology/2]).
  
 %% Predicates include into all ontologies that will be loaded
 -define(BUILD_IN_PREDS,[]).
@@ -113,7 +113,13 @@ validate_text_pred({file, Filename}) ->
 get_registered_ont_desc(NameSpace) ->
   ets:lookup(?ONTO_STORE, NameSpace).
 
-%%%%%%%%%%%%%%%%%  Pre-Initialisation of ontologies
+%%%%%%%%%%%%%%%%%  Initialisation of ontologies
+
+initialise_ontology(Agent_name, {Ns,Params}) ->
+  {ok, {Ns, Ns}}.
+
+
+
 
 load_builded_in_preds(#est{} = Kb) ->
   lists:foldl(fun({Head, M, F}, Db) ->
