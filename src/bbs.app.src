@@ -8,6 +8,7 @@
     stdlib,
     sasl,
     lager,
+    uuid,
     erlog
    ]},
   {env,[]},
