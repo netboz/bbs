@@ -1,7 +1,7 @@
 {"1.1.0",
 [{<<"erlog">>,
   {git,"https://netboz@bitbucket.org/netboz/erlog_bbs.git",
-       {ref,"0345e076531ef037c4888ef1ce60bdae29f6b8f3"}},
+       {ref,"5d090801de8d0d11a643b5035054b171c3844739"}},
   0},
  {<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.8.0">>},0},

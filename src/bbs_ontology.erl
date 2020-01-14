@@ -21,7 +21,6 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%% Ontologies registration
 
-
 register_ontologies([]) ->
   ?INFO_MSG("Finished Ontologies registration.",[]);
 
@@ -115,16 +114,25 @@ get_registered_ont_desc(NameSpace) ->
 
 %%%%%%%%%%%%%%%%%  Initialisation of ontologies
 
-initialise_ontology(Agent_name, {Ns,Params}) ->
-  {ok, {Ns, Ns}}.
+initialise_ontology(_Agent_name, {Ns, _Params}) ->
+  case get_registered_ont_desc(Ns) of
+    [] ->
+      ?ERROR_MSG("Ontology not found :~p",[Ns]),
+      {error, unregistered_ontoloy};
+    [{_, TextPredList, _BuiltInPredsList}] ->
+      {ok, Est0} = erlog_int:new(bbs_db_ets, ontology),
+      {ok, Est1} = load_builded_in_preds(Est0),
+      ?INFO_MSG("Loading : ~p",[TextPredList]),
+      {ok, _Est2} = load_prolog_preds(TextPredList, Est1),
+      {ok, {Ns, Ns}}
+  end.
 
 
-
-
-load_builded_in_preds(#est{} = Kb) ->
-  lists:foldl(fun({Head, M, F}, Db) ->
-    erlog_int:add_compiled_proc(Head, M, F, Db) end, Kb#est.db,
-    ?BUILD_IN_PREDS).
+load_builded_in_preds(#est{} = Est) ->
+  NewDb = lists:foldl(fun({Head, M, F}, Db) ->
+    erlog_int:add_compiled_proc(Head, M, F, Db) end, Est#est.db,
+    ?BUILD_IN_PREDS),
+  {ok, Est#est{db = NewDb}}.  
 
 %% This should allow list longer than one of builded in mods, but too lazy to do it right now
 %% TODO: Manange list of built in preds mods
@@ -153,13 +161,17 @@ load_external_preds(OntMod, Kb) when is_atom(OntMod) ->
   end.
 
 
-load_prolog_preds(TextPredList, #est{} = Kb) ->
+%% TODO : Permit loading multiple prolog files
+
+load_prolog_preds([], Est) ->
+  {ok, Est};
+
+load_prolog_preds([{string, Predicate}|Other_preds], #est{} = Est) ->
   %% Return our Kb with all clauses loaded
-  lists:foldl(fun(Entry, Est) -> load_predicate(Entry, Est) end, Kb, TextPredList).
+  NewDb = erlog_int:assertz_clause(string_to_eterm(Predicate), Est#est.db),
+  load_prolog_preds(Other_preds, Est#est{db = NewDb});
 
-
-
-load_predicate({file, File}, #est{} = Kb) ->
+load_prolog_preds([{file, File}], #est{} = Est) ->
   PrivDir = case code:priv_dir(bbs) of
               {error, bad_name} ->
                 % This occurs when not running as a release; e.g., erl -pa ebin
@@ -172,28 +184,24 @@ load_predicate({file, File}, #est{} = Kb) ->
                 % on the file system
                 SomeDir
             end,
-  ?INFO_MSG("Consulting : ~p", [filename:join([PrivDir, "prolog", File])]),
+  ?INFO_MSG("Consulting : ~p", [filename:nativename(filename:join([PrivDir, "ontologies", File]))]),
 
 
-  try  erlog_file:consult(filename:join([PrivDir, "prolog", File]), Kb) of
+  try  erlog_file:consult(filename:nativename(filename:join([PrivDir, "ontologies", File])), Est) of
     {ok, #est{} = NewEst} ->
-      NewEst;
+      {ok, NewEst};
     Other ->
       ?WARNING_MSG("Unexpected result while loading predicates from file :~p", [{File, Other}]),
-      Kb
+      failed_consulting_predicates_from_file
   catch
     M:E ->
-      ?INFO_MSG("ERROR loading predicates from file :~p ~p",[M,E])
+      ?INFO_MSG("ERROR loading predicates from file :~p ~p",[M,E]),
+      failed_consulting_predicates_from_file
   end;
 
-load_predicate({string, Predicate}, DbRef) ->
-  erlog_int:assertz_clause(string_to_eterm(Predicate), DbRef),
-  ok;
-
-
-load_predicate(Unk, DbSt) ->
+load_prolog_preds(Unk, Db) ->
   ?WARNING_MSG("Unrecognized intialisation predicate :~p", [Unk]),
-  DbSt.
+  {bad_predicate, Db}.
 
 
 string_to_eterm(String) ->
