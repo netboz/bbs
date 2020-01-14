@@ -119,16 +119,17 @@ initialise_ontology(_Agent_name, {Ns, _Params}) ->
     [] ->
       ?ERROR_MSG("Ontology not found :~p",[Ns]),
       {error, unregistered_ontoloy};
-    [{_, TextPredList, _BuiltInPredsList}] ->
+    [{_, TextPredList, BuiltInPredsList}] ->
       {ok, Est0} = erlog_int:new(bbs_db_ets, ontology),
-      {ok, Est1} = load_builded_in_preds(Est0),
+      {ok, Est1} = load_global_preds(Est0),
       ?INFO_MSG("Loading : ~p",[TextPredList]),
-      {ok, _Est2} = load_prolog_preds(TextPredList, Est1),
+      {ok, Est2} = load_builtin_preds(BuiltInPredsList, Est1),
+      {ok, _Est3} = load_prolog_preds(TextPredList, Est2),
       {ok, {Ns, Ns}}
   end.
 
 
-load_builded_in_preds(#est{} = Est) ->
+load_global_preds(#est{} = Est) ->
   NewDb = lists:foldl(fun({Head, M, F}, Db) ->
     erlog_int:add_compiled_proc(Head, M, F, Db) end, Est#est.db,
     ?BUILD_IN_PREDS),
@@ -136,21 +137,23 @@ load_builded_in_preds(#est{} = Est) ->
 
 %% This should allow list longer than one of builded in mods, but too lazy to do it right now
 %% TODO: Manange list of built in preds mods
-load_external_preds([PredMod|Others], Kb) ->
-  load_external_preds(PredMod, Kb),
-  load_external_preds(Others, Kb);
+load_builtin_preds([PredMod|Others], #est{} = Est) ->
+  load_builtin_preds(PredMod, Est),
+  load_builtin_preds(Others, Est);
 
-load_external_preds([], Kb) ->
-  Kb;
+load_builtin_preds([], Est) ->
+  {ok, Est};
 
-load_external_preds(OntMod, Kb) when is_atom(OntMod) ->
+load_builtin_preds(OntMod, #est{} = Est) when is_atom(OntMod) ->
   try OntMod:external_predicates() of
     Result when is_list(Result) ->
-      lists:foldl(fun({Head, M, F}, Db) ->
-        erlog_int:add_compiled_proc(Head, M, F, Db) end, Kb#est.db,
+      NewDb = lists:foldl(fun({Head, M, F}, Db) ->
+        erlog_int:add_compiled_proc(Head, M, F, Db) end, Est#est.db,
         Result),
-      ok;
-    _ -> ok
+      Est#est{db = NewDb};
+    Unk -> 
+      ?ERROR_MSG("Error when fetching external predicates from ontology :~p", [Unk]),
+      {error, Unk}
   catch
     Else ->
       ?ERROR_MSG("Error when fetching external predicates from ontology :~p", [Else]),
