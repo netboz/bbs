@@ -3,7 +3,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(bbs_sup).
+-module(bbs_agent_sup).
 
 -behaviour(supervisor).
 
@@ -11,7 +11,7 @@
 
 -export([init/1]).
 
--define(SERVER, ?MODULE).
+-define(SERVER, bubbles_sup).
 
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
@@ -26,10 +26,11 @@ start_link() ->
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
 init([]) ->
-    SupFlags = #{strategy => one_for_all,
+    SupFlags = #{strategy => simple_one_for_one,
                  intensity => 10,
                  period => 1},
-    ChildSpecs = [{bubbles_sup, {bbs_agent_sup, start_link, []}, permanent, infinity, supervisor, [bbs_agent_sup]}],
+    ChildSpecs =  [{bbs_agent, {bbs_agent, start_link, []},
+        transient, 2000, worker, [bbs_agent]}],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
