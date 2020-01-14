@@ -7,7 +7,7 @@
 %%% Created : 10. Jan 2020 23:24
 %%%-------------------------------------------------------------------
 -module(bbs_db_ets).
--author("Yan").
+-author("Many").
 
 -export([new/1]).
 -export([add_built_in/2,add_compiled_proc/4,asserta_clause/4,assertz_clause/4]).
