@@ -14,7 +14,7 @@
 -include("utils.hrl").
 
 %% API
--export([register_ontologies/1, get_registered_ont_desc/1, initialise_ontology/2]).
+-export([register_ontologies/1, get_registered_ont_desc/1, load_ontology/2]).
  
 %% Predicates include into all ontologies that will be loaded
 -define(BUILD_IN_PREDS,[]).
@@ -114,7 +114,7 @@ get_registered_ont_desc(NameSpace) ->
 
 %%%%%%%%%%%%%%%%%  Initialisation of ontologies
 
-initialise_ontology(_Agent_name, {Ns, _Params}) ->
+load_ontology(_Agent_name, {Ns, _Params}) ->
   case get_registered_ont_desc(Ns) of
     [] ->
       ?ERROR_MSG("Ontology not found :~p",[Ns]),

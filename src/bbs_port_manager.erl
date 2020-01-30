@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 30. Jan 2020 18:23
 %%%-------------------------------------------------------------------
--module(bbs_port_controler).
+-module(bbs_port_manager).
 -author("Yan").
 
 -behaviour(gen_server).

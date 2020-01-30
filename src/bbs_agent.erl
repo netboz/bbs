@@ -18,7 +18,7 @@
 -export([start_link/1]).
 
 %% gen_statem callbacks
--export([init/1, format_status/2, ontologies_init/3, running/3, handle_event/4, terminate/3,
+-export([init/1, ontologies_init/3, running/3, handle_event/4, terminate/3,
   code_change/4, callback_mode/0]).
 
 -define(SERVER, ?MODULE).
@@ -61,14 +61,6 @@ init(AgentSpecs) ->
 %% the callback mode of the callback module.
 callback_mode() ->
   state_functions.
-
-%% @private
-%% @doc Called (1) whenever sys:get_status/1,2 is called by gen_statem or
-%% (2) when gen_statem terminates abnormally.
-%% This callback is optional.
-format_status(_Opt, [_PDict, _StateName, _State]) ->
-  Status = some_term,
-  Status.
 
 %% @private
 %% @doc There should be one instance of this function for each possible
