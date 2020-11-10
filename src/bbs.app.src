@@ -9,6 +9,7 @@
     sasl,
     lager,
     uuid,
+    grpcbox,
     erlog
    ]},
   {env,[]},
