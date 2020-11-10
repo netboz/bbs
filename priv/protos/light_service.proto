@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package eGem;
+
+import "./priv/protos/global_defs.proto";
+
+service light_service
+{
+    rpc add_light_component(light_component_parameters) returns (generic_result_code) {}
+    rpc remove_light_components(m_entity_id) returns (generic_result_code) {}
+    rpc update_light_status(light_component_parameters) returns (generic_result_code) {}
+}
+
+
+message light_component_parameters{
+    uint64 entity_id                        = 1;
+    bool is_visible                         = 2;
+    bool is_on                              = 3;
+    vector4 color                           = 4;
+    float diffuse_multiplier                = 5;
+    float specular_multiplier               = 6; 
+    bool is_ambiant                         = 7;
+    float max_point_distance                = 8;
+    float PointAttenuationBulbSize          = 9;
+    float area_max_distance                 = 10;
+    float area_width                        = 11;
+    float area_height                       = 12;
+    float area_fov                          = 13;
+    float projector_max_distance            = 14;
+    float projector_attenuation_bulb_size   = 15;
+    float projector_fov                     = 16;
+    float projector_near_plane              = 17;
+    vector3 probe_area_dimension            = 18;
+    uint32 probe_sort_priority              = 19;
+    bool probe_box_projected                = 20;
+    float probe_box_height                  = 21;
+    float probe_box_length                  = 22;
+    float probe_box_width                   = 23;
+    float attenuation_falloff               = 24;
+    float probe_fade                        = 25; 
+    }

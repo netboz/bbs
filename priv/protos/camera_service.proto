@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+
+import "./priv/protos/global_defs.proto";
+
+package eGem;
+
+service camera_service
+{ 
+    rpc add_camera_component(camera_component_parameters) returns (generic_result_code) {}
+    rpc activate_camera_entity(m_entity_id) returns (generic_result_code) {}
+}
+
+
+message camera_component_parameters {
+        m_entity_id entity_id = 1;
+}
