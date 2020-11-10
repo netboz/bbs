@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Initialisation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-action(initialize(Ns, Ag, Params), [log(info,"Starting brain test",[]),external_predicate(Value), log(debug,"Solution :~p",[Value]), valid_external_solution(Value), log(debug," Good Solution :~p",[Value])], initialized(Ns, Ag, Params)).
+action(initialize(Ns, Ag, Params), [log(info,"Starting brain test",[]), "bbs:brain_tests"::external_predicate(Value), log(debug,"Solution :~p",[Value]), valid_external_solution(Value), log(debug," Good Solution :~p",[Value])], initialized(Ns, Ag, Params)).
 
 initialize(AgentId, Namespace, Params) :-
     assert(initialized(Ns, Ag, Params)).
@@ -25,7 +25,6 @@ goal(Goal) :-
 goal(Goal) :-
      log(info, "Looking to satisfy Goal : ~p", [Goal]),
      action(Action, Prereq, Goal),
-     satisfy_prereq(Prereq),
      %%log(info, "prereqs ~p",[Prereq]),
      satisfy_prereq(Prereq),
     log(debug,"Prereqs ok, performing action :~p",[{Onto,Action}]),
