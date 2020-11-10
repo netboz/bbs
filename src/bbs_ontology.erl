@@ -317,16 +317,16 @@ lager_predicate({_Atom, Type, Label, Arguments}, Next0, #est{} = St) ->
 
 prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOntologyPredicate},
     Next0, #est{bs=ParentBindings, cps=ParentCps, vn=ParentVn} = ParentOntologyState) ->
-  ?INFO_MSG("Proving External : ~p   bindings :~p",[{ExternalOntologyNameSpace, ExternalOntologyPredicate}, dict:to_list(ParentBindings)]),
-  ?INFO_MSG("deref predicate :~p",[erlog_int:deref(ExternalOntologyPredicate, ParentBindings)]),
+  %?INFO_MSG("Proving External : ~p   bindings :~p",[{ExternalOntologyNameSpace, ExternalOntologyPredicate}, dict:to_list(ParentBindings)]),
+  %?INFO_MSG("deref predicate :~p",[erlog_int:deref(ExternalOntologyPredicate, ParentBindings)]),
   case bbs_agent:get_ontology_state_from_namespace(ExternalOntologyNameSpace) of
     #est{} = ExternalOntologyState ->
       DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
       case erlog_int:prove_body([DDExternalPredicate], ExternalOntologyState#est{bs = erlog_int:new_bindings()}) of
         {succeed, NewExternalState} ->
-          ?INFO_MSG("Succeeded external predicate : ~p",[{ExternalOntologyPredicate, NewExternalState#est.bs, Next0}]),
+          %?INFO_MSG("Succeeded external predicate : ~p",[{ExternalOntologyPredicate, NewExternalState#est.bs, Next0}]),
           DDResultPredicate = erlog_int:dderef(DDExternalPredicate, NewExternalState#est.bs),
-          ?INFO_MSG("DDref external :~p",[DDResultPredicate]),
+          %?INFO_MSG("DDref external :~p",[DDResultPredicate]),
           {succeed, NewBindings} = erlog_int:unify(DDResultPredicate, ExternalOntologyPredicate, ParentBindings),
           FailFun = fun (LCp, LCps, Lst) ->
             fail_external_predicate({LCp, LCps, Lst}, Next0, ParentOntologyState, DDExternalPredicate, NewExternalState)
@@ -349,7 +349,7 @@ prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOnt
 %% @end
 %%------------------------------------------------------------------------------
 
-fail_external_predicate({LCp, LCps, Lst}, Next0, ParentOntologyState, ExternalPredicate, ExternalState) ->
+fail_external_predicate({_LCp, _LCps, _Lst}, Next0, ParentOntologyState, ExternalPredicate, ExternalState) ->
   %?INFO_MSG("Failling :~p   ~p    ~p",[{LCp, LCps, Lst}, Next0, ParentOntologyState]),
   case erlog_int:fail(ExternalState) of
     {succeed, NewExternalState} ->
