@@ -17,8 +17,8 @@
 
 %% new(InitArgs) -> Db.
 
-new(Name) ->
-    ets:new(Name, [set,protected,{keypos,1}]).
+new([NameSpace, AgentId]) ->
+    ets:new(binary_to_atom(iolist_to_binary([AgentId, "_", NameSpace])), [set,protected,{keypos,1}]).
 
 %% add_built_in(Functor, Database) -> NewDatabase.
 %%  Add Functor as a built-in in the database.
