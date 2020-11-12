@@ -26,11 +26,15 @@
 % Utilities
 -export([prove/3, string_to_eterm/1]).
 
-%% Predicates included into all ontologies that will be registered
+%% Built-in (erlang) Predicates included into all ontologies that will be registered
 -define(COMMON_BUILD_IN_PREDS, [
   {{log, 3}, ?MODULE, lager_predicate},
   {{'::', 2}, ?MODULE, prove_external_ontology_predicate}
 ]).
+
+%% Predicates included into all ontologies that will be registered
+-define(COMMON_PROLOG_PREDS, [{file, "common_predicates.pl"}]).
+
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -151,101 +155,6 @@ validate_text_pred({file, Filename}) ->
 get_registered_ont_desc(NameSpace) ->
   ets:lookup(?ONTO_STORE, NameSpace).
 
-
-%% Load predicates common to all ontologies
-
-load_common_predicates(#est{} = Est) ->
-  NewDb = lists:foldl(fun({Head, M, F}, Db) ->
-    erlog_int:add_compiled_proc(Head, M, F, Db) end, Est#est.db,
-    ?COMMON_BUILD_IN_PREDS),
-  ?INFO_MSG("Loaded global predicates : ~p", [?COMMON_BUILD_IN_PREDS]),
-
-  {ok, Est#est{db = NewDb}}.
-
-%% TODO : Permit loading multiple prolog files
-
-%% Load prolog files in text format
-
-load_prolog_predicates([], Est) ->
-  {ok, Est};
-
-%%load_prolog_predicates([{string, Predicate}|Other_preds], #est{} = Est) ->
-%%  %% Return our Kb with all clauses loaded
-%%  try erlog_int:assertz_clause(string_to_eterm(Predicate), Est#est.db) of
-%%
-%%  end,
-%%  load_prolog_predicates(Other_preds, Est#est{db = NewDb});
-
-load_prolog_predicates([{file, File}|OtherPredicates], #est{} = Est) ->
-
-  PrivDir = case code:priv_dir(bbs) of
-              {error, bad_name} ->
-                % This occurs when not running as a release; e.g., erl -pa ebin
-                % Of course, this will not work for all cases, but should account
-                % for most
-                "priv";
-              SomeDir ->
-                % In this case, we are running in a release and the VM knows
-                % where the application (and thus the priv directory) resides
-                % on the file system
-                SomeDir
-            end,
-  ?INFO_MSG("Consulting : ~p", [filename:nativename(filename:join([PrivDir, "ontologies", File]))]),
-
-  try erlog_file:consult(filename:nativename(filename:join([PrivDir, "ontologies", File])), Est) of
-    {ok, #est{} = NewEst} ->
-      ?INFO_MSG("Consulted : ~p", [filename:nativename(filename:join([PrivDir, "ontologies", File]))]),
-      load_prolog_predicates(OtherPredicates, NewEst);
-    Other ->
-      ?WARNING_MSG("Unexpected result while loading predicates from file :~p", [{File, Other}]),
-      {error, failed_consulting_predicates_from_file}
-  catch
-    M:E ->
-      ?INFO_MSG("ERROR loading predicates from file :~p ~p",[M,E]),
-      {error, failed_consulting_predicates_from_file}
-  end;
-
-load_prolog_predicates([Unk|OtherPredicates], Db) ->
-  ?WARNING_MSG("Unrecognized intialisation predicate :~p", [Unk]),
-  load_prolog_predicates(OtherPredicates, Db).
-
-%%------------------------------------------------------------------------------
-%% @doc
-%% Load built-in predicates from erlang module
-%% @end
-%%------------------------------------------------------------------------------
-
-load_built_in_predicates([], Kb) ->
-  {ok, Kb};
-
-load_built_in_predicates([PredicatesModule|OtherModules], Kb) ->
-  case load_built_in_predicate(PredicatesModule,Kb) of
-    {ok, #est{} = NewKb} ->
-      load_built_in_predicates(OtherModules, NewKb);
-    {error, Reason} ->
-      ?ERROR_MSG("Built in predicates module :~p could not be loaded, reason:~p",
-        [PredicatesModule, Reason]),
-      {error, Reason}
-  end.
-
-load_built_in_predicate(OntMod, Kb) when is_atom(OntMod) ->
-  try OntMod:external_predicates() of
-    Result when is_list(Result) ->
-      lists:foldl(fun({Head, M, F}, Db) ->
-        erlog_int:add_compiled_proc(Head, M, F, Db) end, Kb#est.db,
-        Result),
-      ?INFO_MSG("Added external predicates from : ~p, predicates : ~p", [OntMod, Result]),
-      {ok,Kb};
-    Else -> Else
-  catch
-    Else ->
-      ?ERROR_MSG("Error when fetching external predicates from ontology :~p", [Else]),
-      {error, Else};
-    M:E ->
-      ?ERROR_MSG("Error when fetching external predicates from ontology :~p", [{M, E}]),
-      {error, {M, E}}
-  end.
-
 %%------------------------------------------------------------------------------
 %% @doc
 %% Given a namespace and kb store module, fully build the initial ontology state
@@ -261,17 +170,22 @@ build_ontology(AgentId, NameSpace, DbMod) ->
     [] ->
       ?ERROR_MSG("Ontology not found :~p",[NameSpace]),
       {error, ontology_unavailable};
-    [{_, TextPredList, BuiltInPredsList}] ->
+    [{_, _TextPredList, _BuiltInPredsList} = OntologyDescription] ->
       %% Create ontology Kb
       {ok, #est{} = InitialOntoState} = create_ontology_store(NameSpace, AgentId, DbMod),
       %% TODO: Right now we return database table Id as ontology state, this needs to be changed
       Tid = InitialOntoState#est.db#db.ref,
-      {ok, StateWithBasePredicates} = load_common_predicates(InitialOntoState),
+      %% Load predicates common to all ontologies
+      {ok, StateWithCommonPredicates} = load_common_predicates(InitialOntoState),
+      ?INFO_MSG("Loaded common predicates into :~p",[NameSpace]),
+      %% Load Ontology predicates
+      {ok, ReadyState} = load_ontology_predicates(OntologyDescription, StateWithCommonPredicates),
+      ?INFO_MSG("Loaded predicates for :~p",[NameSpace]),
       %% Load the predicates writen in erlang if needed, add them to Kb
-      {ok, StateWithBuiltInPredicates} = load_built_in_predicates(BuiltInPredsList, StateWithBasePredicates),
+      %%{ok, StateWithBuiltInPredicates} = load_built_in_predicates(OntologyDescription, StateWithBasePredicates),
       %% Load the predicates writen in Prolog, add them to Kb
-      {ok, StateWithPrologPreds} = load_prolog_predicates(TextPredList, StateWithBuiltInPredicates),
-      {ok, {Tid, StateWithPrologPreds}}
+      %%{ok, StateWithPrologPreds} = load_prolog_predicates(TextPredList, StateWithBuiltInPredicates),
+      {ok, {Tid, ReadyState}}
   end.
 
 create_ontology_store(NameSpace, AgentId, DbMod) ->
@@ -280,6 +194,139 @@ create_ontology_store(NameSpace, AgentId, DbMod) ->
       {ok, Est};
     {error, Reason} ->
       ?ERROR_MSG("Couldn't create ontology knowledge store:~p",[Reason])
+  end.
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Load a list of built-in predicates into ontology Kb
+%%
+%% @end
+%%------------------------------------------------------------------------------
+
+load_built_in_predicates([{_Head, _Module, _Function}|_OtherBuiltInPredicates] = Built_in_predicates, #est{} = Est) ->
+  NewDb = lists:foldl(fun({H, M, F}, Db) ->
+    erlog_int:add_compiled_proc(H, M, F, Db) end, Est#est.db,
+    Built_in_predicates),
+  ?INFO_MSG("Loaded built-in predicates : ~p", [Built_in_predicates]),
+  {ok, Est#est{db = NewDb}}.
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Load predicates into ontology Kb.
+%% Pls note that erlang built in predicates are not loaded by this function, use
+%% load_built_in_predicates/2 instead.
+%% @end
+%%------------------------------------------------------------------------------
+
+load_prolog_predicates([], Est) ->
+  {ok, Est};
+
+load_prolog_predicates([{file, File}|OtherPredicates], #est{} = Est) ->
+
+  PrivDir = case code:priv_dir(bbs) of
+              {error, bad_name} ->
+                % This occurs when not running as a release; e.g., erl -pa ebin
+                % Of course, this will not work for all cases, but should account
+                % for most
+                "priv";
+              SomeDir ->
+                % In this case, we are running in a release and the VM knows
+                % where the application (and thus the priv directory) resides
+                % on the file system
+                SomeDir
+            end,
+  try erlog_file:consult(filename:nativename(filename:join([PrivDir, "ontologies", File])), Est) of
+    {ok, #est{} = NewEst} ->
+      ?INFO_MSG("Consulted : ~p", [filename:nativename(filename:join([PrivDir, "ontologies", File]))]),
+      load_prolog_predicates(OtherPredicates, NewEst);
+    Other ->
+      ?WARNING_MSG("Unexpected result while loading predicates from file :~p", [{File, Other}]),
+      {error, failed_consulting_predicates_from_file}
+  catch
+    M:E ->
+      ?ERROR_MSG("ERROR loading predicates from file :~p ~p",[M,E]),
+      {error, failed_consulting_predicates_from_file}
+  end;
+
+load_prolog_predicates([{text, TextualPrologPredicate}|OtherPredicates], #est{} = Est) ->
+  case string_to_eterm(TextualPrologPredicate) of
+    {error, Error} ->
+      ?ERROR_MSG("Error ~p while parsing : ~p ",[Error, TextualPrologPredicate]),
+      {error, Error};
+    TermPredicate when is_tuple(TermPredicate) ->
+      NewDb = load_term_predicate(TermPredicate, Est),
+      load_prolog_predicates(OtherPredicates, Est#est{db = NewDb})
+  end;
+
+
+load_prolog_predicates([Unk|OtherPredicates], Db) ->
+  ?WARNING_MSG("Unrecognized intialisation predicate :~p", [Unk]),
+  load_prolog_predicates(OtherPredicates, Db).
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Insert into ontology a new predicate in internal prolog form
+%% @end
+%%------------------------------------------------------------------------------
+
+load_term_predicate(TermPredicate, #est{} = State) ->
+  erlog_int:asserta_clause(TermPredicate, State#est.db).
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Load built-in and prolog predicates common to all ontologies
+%% @end
+%%------------------------------------------------------------------------------
+
+load_common_predicates(InitialOntoState) ->
+  {ok , StateWithCommonBuiltIn} = load_built_in_predicates(?COMMON_BUILD_IN_PREDS, InitialOntoState),
+  {ok, _StateWithCommonPredicates} = load_prolog_predicates(?COMMON_PROLOG_PREDS, StateWithCommonBuiltIn).
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Load built-in and prolog predicates common to all ontologies
+%% @end
+%%------------------------------------------------------------------------------
+
+load_ontology_predicates({_, TextPredList, BuiltInModulesPredsList}, StateWithCommonPredicates) ->
+  {ok, StateWithOntologyBuiltIn} = load_ontology_built_in_predicates(BuiltInModulesPredsList, StateWithCommonPredicates),
+  {ok, _StateWithOntologPredicates} = load_prolog_predicates(TextPredList, StateWithOntologyBuiltIn).
+
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Load built-in predicates for an ontology
+%% @end
+%%------------------------------------------------------------------------------
+
+
+load_ontology_built_in_predicates([], #est{} = Kb) ->
+  {ok, Kb};
+
+load_ontology_built_in_predicates([PredicatesModule|OtherModules], Kb) when is_atom(PredicatesModule) ->
+  case load_ontology_built_in_predicate(PredicatesModule,Kb) of
+    {ok, #est{} = NewKb} ->
+      load_ontology_built_in_predicates(OtherModules, NewKb);
+    {error, Reason} ->
+      ?ERROR_MSG("Built in predicates module :~p could not be loaded, reason:~p",
+        [PredicatesModule, Reason]),
+      {error, Reason}
+  end.
+
+load_ontology_built_in_predicate(OntMod, Kb) when is_atom(OntMod) ->
+  try OntMod:external_predicates() of
+    BuiltInPredicate when is_list(BuiltInPredicate) ->
+      {ok, NewKb } = load_built_in_predicates(BuiltInPredicate, Kb),
+      ?INFO_MSG("Added external predicates from : ~p, predicates : ~p", [OntMod, BuiltInPredicate]),
+      {ok,NewKb};
+    Else -> Else
+  catch
+    Else ->
+      ?ERROR_MSG("Error when fetching external predicates from ontology :~p", [Else]),
+      {error, Else};
+    M:E ->
+      ?ERROR_MSG("Error when fetching external predicates from ontology :~p", [{M, E}]),
+      {error, {M, E}}
   end.
 
 %==============================================================================

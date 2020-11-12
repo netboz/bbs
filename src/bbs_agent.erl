@@ -54,7 +54,7 @@ init(AgentSpecs) ->
   {ok, ontologies_init, #state{name = AgentSpecs#agent.name,
     onto_dict = dict:new(),
     uuid = Uuid,
-    onto_to_init = AgentSpecs#agent.startup_onts}, [{next_event, cast, init_next}]}.
+    onto_to_init = AgentSpecs#agent.startup_ontologies}, [{next_event, cast, init_next}]}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out

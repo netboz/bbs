@@ -38,7 +38,7 @@ stop(_State) -> ok.
 %% API
 
 new_bubble(#agent{} = Bubble_specs) ->
-    supervisor:start_child(bubbles_sup, [Bubble_specs]).
+  supervisor:start_child(bubbles_sup, [Bubble_specs]).
 
 
 %% internal functions
@@ -48,7 +48,7 @@ new_bubble(#agent{} = Bubble_specs) ->
 
 new_bubble_test() ->
   BubSpecs = #agent{name = <<"bubble">>, aid_entries = [],
-    startup_onts =
+    startup_ontologies =
     [
       {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
       {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
