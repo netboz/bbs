@@ -364,16 +364,12 @@ lager_predicate({_Atom, Type, Label, Arguments}, Next0, #est{} = St) ->
 
 prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOntologyPredicate},
     Next0, #est{bs=ParentBindings, cps=ParentCps, vn=ParentVn} = ParentOntologyState) ->
-  %?INFO_MSG("Proving External : ~p   bindings :~p",[{ExternalOntologyNameSpace, ExternalOntologyPredicate}, dict:to_list(ParentBindings)]),
-  %?INFO_MSG("deref predicate :~p",[erlog_int:deref(ExternalOntologyPredicate, ParentBindings)]),
   case bbs_agent:get_ontology_state_from_namespace(ExternalOntologyNameSpace) of
     #est{} = ExternalOntologyState ->
       DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
       case erlog_int:prove_body([DDExternalPredicate], ExternalOntologyState#est{bs = erlog_int:new_bindings()}) of
         {succeed, NewExternalState} ->
-          %?INFO_MSG("Succeeded external predicate : ~p",[{ExternalOntologyPredicate, NewExternalState#est.bs, Next0}]),
           DDResultPredicate = erlog_int:dderef(DDExternalPredicate, NewExternalState#est.bs),
-          %?INFO_MSG("DDref external :~p",[DDResultPredicate]),
           {succeed, NewBindings} = erlog_int:unify(DDResultPredicate, ExternalOntologyPredicate, ParentBindings),
           FailFun = fun (LCp, LCps, Lst) ->
             fail_external_predicate({LCp, LCps, Lst}, Next0, ParentOntologyState, DDExternalPredicate, NewExternalState)
@@ -382,7 +378,10 @@ prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOnt
           erlog_int:prove_body(Next0, ParentOntologyState#est{cps = [Cp|ParentCps], bs = NewBindings});
         fail ->
           ?INFO_MSG("Failled external predicate : ~p",[ExternalOntologyPredicate]),
-          erlog_int:fail(ParentOntologyState)
+          erlog_int:fail(ParentOntologyState);
+        OtherResult ->
+          %% Any other result stops the current proof. This permits 'paused' predicate to stop the execution.
+          OtherResult
       end;
     undefined ->
       erlog_int:fail(ParentOntologyState)
