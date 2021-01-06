@@ -93,7 +93,7 @@ ontologies_init(cast, init_next, #state{onto_to_init = [{ontology, Ns, Params, D
           {_K, KbReady} = erlog_int:prove_goal({set_prolog_flag, unknown, fail}, InitializedOntoState),
           {ok, {Ns, KbReady}};
         {{paused, Ns, PredPatFunc, PredPatParams}, Next0, St} ->
-          %%put_onto_hooks({Ns, PredPatFunc}, {PredPatParams, Next0, St},[once]),^M
+           ontolog:put_onto_hooks({Ns, PredPatFunc}, {PredPatParams, Next0, St},[once]),
           {{paused, Ns, PredPatFunc, PredPatParams}, Next0, St};
         {fail, FStatr} ->
           ?ERROR_MSG("Ontology initialisation failed :~p with state: ~p", [Ns, FStatr]),
