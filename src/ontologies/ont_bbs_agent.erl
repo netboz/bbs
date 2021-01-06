@@ -29,7 +29,7 @@
 -export([external_predicates/0]).
 
 %% Built in predicates
--export([react_on_predicate/3, wait_for_predicate/3, prove_external_ontology_predicate/3]).
+-export([react_on_predicate/3, wait_for_predicate/3]).
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -48,10 +48,11 @@ external_predicates() ->
 %% @end
 %%------------------------------------------------------------------------------
 
-wait_for_predicate({_Atom, NameSpace, PredPat},Next0,#est{} = St) ->
+wait_for_predicate({_Atom, NameSpace, PredicatePattern}, Next0, #est{bs = Bs} = St) ->
   %TODO: Manage backtracking
-  ?INFO_MSG("waiting  for ~p:~p", [NameSpace, PredPat]),
-  PredPatList = tuple_to_list(PredPat),
+  DDPredPat = erlog_int:dderef(PredicatePattern, Bs),
+  ?INFO_MSG("waiting  for ~p:~p", [NameSpace, DDPredPat]),
+  PredPatList = tuple_to_list(DDPredPat),
   [PredPatFunc|PredPatParams] = PredPatList,
   {{paused, NameSpace, PredPatFunc, PredPatParams}, Next0, St}.
 
@@ -60,52 +61,23 @@ wait_for_predicate({_Atom, NameSpace, PredPat},Next0,#est{} = St) ->
 %% Built in predicate. Register a predicate to react on into agent state.
 %% @end
 %%------------------------------------------------------------------------------
-
-react_on_predicate({_Atom, NameSpace, PredPat, NsReact, PredReact, Options}, Next0, #est{} = St) ->
-  react_on(NameSpace, PredPat, NsReact, PredReact, Options),
-  erlog_int:prove_body(Next0, St);
-
-react_on_predicate({_Atom, NameSpace, PredPat, PredReact}, Next0, #est{} = St) ->
+react_on_predicate({Atom, NameSpace, PredPat, PredReact}, Next0, #est{} = St) ->
   {NsReact, _Db} = St#est.db#db.ref,
-  react_on(NameSpace, PredPat, NsReact, PredReact),
-  erlog_int:prove_body(Next0, St);
+  react_on_predicate({Atom, NameSpace, PredPat, NsReact, PredReact}, Next0, St);
 
-react_on_predicate({_Atom, NameSpace, PredPat, PredReact, Options}, Next0, #est{} = St) ->
-  {_AgName, NsReact} = St#est.db#db.ref,
-  react_on(NameSpace, PredPat, NsReact, PredReact, Options),
+react_on_predicate({Atom, NameSpace, PredPat, NsReact, PredReact}, Next0, #est{} = St) ->
+  react_on_predicate({Atom, NameSpace, PredPat, NsReact, PredReact, []}, Next0, St);
+
+react_on_predicate({_Atom, NameSpace, PredPat, NsReact, PredReact, Options}, Next0, #est{bs = Bs} = St) ->
+  react_on(NameSpace, PredPat, NsReact, PredReact, Options, Bs),
   erlog_int:prove_body(Next0, St).
 
-react_on(NameSpaceIn, PredPat, NameSpaceOut, PredReact) ->
-  react_on(NameSpaceIn, PredPat, NameSpaceOut, PredReact,[]).
-
-react_on(NameSpaceIn, PredPat, NameSpaceOut, PredReact, Options) ->
-  PredPatList = tuple_to_list(PredPat),
+react_on(NameSpaceIn, PredPat, NameSpaceOut, PredReact, Options, Bindings) ->
+  DDPredPat = erlog_int:dderef(PredPat, Bindings),
+  DDPredReact = erlog_int:dderef(PredReact, Bindings),
+  PredPatList = tuple_to_list(DDPredPat),
   [PredPatFunc|PredPatParams] = PredPatList,
-  put_onto_hooks({NameSpaceIn, PredPatFunc}, {PredPatParams, NameSpaceOut, PredReact}, Options).
-
-%%------------------------------------------------------------------------------
-%% @doc
-%% @private
-%% Prove predicate onto Namespace ontology
-%%
-%% @end
-%%------------------------------------------------------------------------------
-
-prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOntologyPredicate},
-    Next0, #est{} = ParentOntologyState) ->
-  case bbs_agent:get_onto_ns(ExternalOntologyNameSpace) of
-    #est{} = ExternalOntologyState ->
-      case erlog_int:prove_goal(ExternalOntologyPredicate, ExternalOntologyState) of
-        %{{succeed, [{'Z', Value}]}, NewState}
-        {{succeed, Bindings}, _NewExternalState} ->
-          ?INFO_MSG("Succeeded external predicate : ~p",[{ExternalOntologyPredicate, Bindings, Next0}]),
-          _ExternalCp = #cp{};
-        fail ->
-          erlog_int:fail(ParentOntologyState)
-      end;
-    undefined ->
-      erlog_int:fail(ParentOntologyState)
-  end.
+  put_onto_hooks({NameSpaceIn, PredPatFunc}, {PredPatParams, NameSpaceOut, DDPredReact}, Options).
 
 
 %-------------------------------------------------------------------------------
