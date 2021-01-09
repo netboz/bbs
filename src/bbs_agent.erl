@@ -28,7 +28,6 @@
 -define(SERVER, ?MODULE).
 
 -record(state, {
-  name,
   uuid,
   onto_to_init = [],
   onto_dict
@@ -50,11 +49,25 @@ start_link(#agent{} = AgentSpecs) ->
 %% process to initialize.
 init(AgentSpecs) ->
   ?INFO_MSG("Initialising Agent :~p   PID :~p",[AgentSpecs, self()]),
-  Uuid = zuuid:binary(zuuid:v4()),
-  {ok, ontologies_init, #state{name = AgentSpecs#agent.name,
+  %% Right now we are trapping exit to manage child processes, even if we don't have one
+  process_flag(trap_exit, true),
+
+  %% Create agent Identifier
+  AgentName = case AgentSpecs#agent.name of
+                undefined ->
+                  zuuid:binary(zuuid:v4());
+                SpecificName when is_binary(SpecificName) ->
+                  SpecificName;
+                _InvalidName ->
+                  ?ERROR_MSG("Invalid name specified :~p ",[_InvalidName]),
+                  zuuid:binary(zuuid:v4())
+              end,
+
+  %% Finish init and start ontologies initialisation
+  {ok, ontologies_init, #state{
     onto_dict = dict:new(),
-    uuid = Uuid,
-    onto_to_init = AgentSpecs#agent.startup_ontologies}, [{next_event, cast, init_next}]}.
+    uuid = AgentName},
+    [{next_event, cast, {init_next, AgentSpecs#agent.startup_ontologies}}]}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
@@ -70,31 +83,32 @@ callback_mode() ->
 %%------------------------------------------------------------------------------
 
 ontologies_init(enter, _, State) ->
-  ?INFO_MSG("Ontology init :~p.",[State#state.name]),
-  {keep_state,State};
+  ?INFO_MSG("Ontology init :~p.",[State#state.uuid]),
+  {keep_state, State};
 
-ontologies_init(cast, init_next, State) when State#state.onto_to_init == [] ->
+ontologies_init(cast, {init_next, []}, State) ->
   %% Call the run predicate in each initialised ontologys
   ?INFO_MSG("All Ontologies initialised.",[]),
-  {next_state,running,State};
+  {next_state, running, State};
 
-ontologies_init(cast, init_next, #state{onto_to_init = [{ontology, Ns, Params, DbMod}|NextOntos]} = State) ->
+ontologies_init(cast, {init_next, [{ontology, Ns, Params, DbMod} | NextOntos]}, #state{} = State) ->
   case bbs_ontology:build_ontology(State#state.uuid, Ns, DbMod) of
     {error, OntoBuildError} ->
-      ?ERROR_MSG("~p Failled to initialize ontology :~p with error: ~p",[State#state.name, Ns, OntoBuildError]),
-      {next_state, ontologies_init, State#state{onto_to_init = NextOntos}, [{next_event, cast, init_next}]};
+      ?ERROR_MSG("~p Failled to initialize ontology :~p with error: ~p",[State#state.uuid, Ns, OntoBuildError]),
+      {next_state, ontologies_init, State#state{onto_to_init = NextOntos}, [{next_event, cast, {init_next, NextOntos}}]};
     {ok, {_Tid, Kb}} ->
       ?INFO_MSG("Builded Knowledge Base for :~p",[Ns]),
+      %% Set the prolog engine to not crash when a predicate isn't found
       {succeed, KbReady} = erlog_int:prove_goal({set_prolog_flag, unknown, fail}, Kb),
-      %% Register the raw kb state into process stack under key Namespace
-      store_ontology_state_on_namespace(Ns, Kb),
-      case prove(Ns, {goal,{initialized, State#state.uuid, Ns, Params}}) of
+      %% Store unitialized ontology state into process state
+      undefined = store_ontology_state_on_namespace(Ns, KbReady),
+
+      case erlog_int:prove_goal({goal,{initialized, State#state.uuid, Ns, Params}}, KbReady) of
         {succeed, InitializedOntoState} ->
-          {_K, KbReady} = erlog_int:prove_goal({set_prolog_flag, unknown, fail}, InitializedOntoState),
-          {ok, {Ns, KbReady}};
+          %% Register the raw kb state into process stack under key Namespace
+          ok;
         {{paused, Ns, PredPatFunc, PredPatParams}, Next0, St} ->
-           ontolog:put_onto_hooks({Ns, PredPatFunc}, {PredPatParams, Next0, St},[once]),
-          {{paused, Ns, PredPatFunc, PredPatParams}, Next0, St};
+           ontolog:put_onto_hooks({Ns, PredPatFunc}, {PredPatParams, Next0, St},[once]);
         {fail, FStatr} ->
           ?ERROR_MSG("Ontology initialisation failed :~p with state: ~p", [Ns, FStatr]),
           {error, preinit_failled};
@@ -102,7 +116,7 @@ ontologies_init(cast, init_next, #state{onto_to_init = [{ontology, Ns, Params, D
           ?ERROR_MSG("Ontology unexpected result :~p", [Else])
       end,
 
-      {next_state, ontologies_init, State#state{onto_to_init = NextOntos}, [{next_event, cast, init_next}]}
+      {next_state, ontologies_init, State, [{next_event, cast, {init_next, NextOntos}}]}
   end.
 
 %%------------------------------------------------------------------------------
@@ -114,16 +128,16 @@ ontologies_init(cast, init_next, #state{onto_to_init = [{ontology, Ns, Params, D
 %%------------------------------------------------------------------------------
 
 running(enter, _, State) ->
-  ?INFO_MSG("Agent ~p is running.",[State#state.name]),
+  ?INFO_MSG("Agent ~p is running.",[State#state.uuid]),
   {keep_state,State};
 
 running(cast, {NameSpace, Fact}, State) ->
-  ?INFO_MSG("Agent ~p checking for stims on :~p",[State#state.name, {NameSpace,Fact}]),
+  ?INFO_MSG("Agent ~p checking for stims on :~p",[State#state.uuid, {NameSpace,Fact}]),
   trigger_stims(NameSpace,Fact),
   {next_state, running, State};
 
 running(UnkMesTyp, UnkMes, State) ->
-  ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",[State#state.name, {UnkMesTyp,UnkMes}]),
+  ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",[State#state.uuid, {UnkMesTyp,UnkMes}]),
   {next_state, running, State}.
 
 %% @private

@@ -100,8 +100,6 @@ printable_all_acc({_Atom, Accs}, Next0, #est{} = St) ->
 
 
 
-
-
 send_msg_iiotp({_Atom, SenderAid, DestAid, Acc, Ontology, Msg}, Next0, St) ->
   ?INFO_MSG("Sending message :~p",[{Acc, Ontology, Msg}]),
   ConvPred = variabilise(Msg, []), %St#est.varnames),

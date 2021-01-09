@@ -6,10 +6,9 @@ goal(Goal) :-
 goal(Goal) :-
      log(info, "Looking to satisfy Goal : ~p", [Goal]),
      action(Action, Prereq, Goal),
-     %%log(debug, "Next action :~p",[Action]),
-     %%log(debug, "prereqs ~p",[Prereq]),
      satisfy_prereq(Prereq),
-     call(Action).
+     call(Action),
+     assert(Goal).
 
 satisfy_prereq([]).
 

@@ -364,6 +364,8 @@ lager_predicate({_Atom, Type, Label, Arguments}, Next0, #est{} = St) ->
 
 prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOntologyPredicate},
     Next0, #est{bs=ParentBindings, cps=ParentCps, vn=ParentVn} = ParentOntologyState) ->
+  ?INFO_MSG("Proving external predicate : ~p",[ExternalOntologyPredicate]),
+
   case bbs_agent:get_ontology_state_from_namespace(ExternalOntologyNameSpace) of
     #est{} = ExternalOntologyState ->
       DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
@@ -384,6 +386,7 @@ prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOnt
           OtherResult
       end;
     undefined ->
+      ?ERROR_MSG("External ontology not found : ~p",[ExternalOntologyNameSpace]),
       erlog_int:fail(ParentOntologyState)
   end.
 

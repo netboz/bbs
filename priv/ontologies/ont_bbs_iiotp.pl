@@ -1,6 +1,8 @@
 namespace("bbs:iiotp").
 
 %%%%%%%%%%%%%%% Ontology Initialisation
+action(initialize(Ag, NsPred, Pred), [])
+
 
 %% Ontology initialization
 action(initialize(Ag, NsPred,Pred), [handler(NsPred, Pred, Params)], initialized(Ns, Ag, Params)).
@@ -25,14 +27,6 @@ initialize(Ag, NsPred, Pred) :-
     assert(Acc),
     assert(initialized(Ns, Ag, Params)).
 
-%% TODO : using var Ont because ontology is received as a binary .. don't know yet how to fix
-
-%%default_public_message_handler(OriginAid, DestinationAid, Ont, inform(_Sender, _MyAid, Ont, Predicate, Params)) :-
-%%    "bbs:bbs_agent"::trigger_stims(Ont, inform(Predicate)).
-
-%%default_public_message_handler(OriginAid, DestinationAid, Ont, Message) :-
-%%    log(info,"Default behavior for message :~p:~p",[Ont,Message]),
-%%    prove_external_ont(Ont,Message).
 
 default_public_message_handler(OriginAid, DestinationAid, Ont, Message) :-
     log(info,"default handler trigguering stims : ~p",[Message]),
