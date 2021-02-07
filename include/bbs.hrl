@@ -3,5 +3,4 @@
 -record(agent,{
   name :: binary(),
   aid_entries,
-  boot,
   startup_ontologies = [] :: list()}).
