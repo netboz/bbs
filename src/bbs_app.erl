@@ -38,7 +38,7 @@ stop(_State) -> ok.
 %% API
 
 new_bubble(#agent{} = Bubble_specs) ->
-  supervisor:start_child(bubbles_sup, [Bubble_specs]).
+  gen_server:cast(bbs_lobby, {new_bubble, Bubble_specs}).
 
 
 %% internal functions
