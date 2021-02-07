@@ -7,8 +7,7 @@ goal(Goal) :-
      log(info, "Looking to satisfy Goal : ~p", [Goal]),
      action(Action, Prereq, Goal),
      satisfy_prereq(Prereq),
-     call(Action),
-     assert(Goal).
+     call(Action).
 
 satisfy_prereq([]).
 
