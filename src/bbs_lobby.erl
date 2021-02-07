@@ -9,6 +9,8 @@
 -module(bbs_lobby).
 -author("Yan").
 
+-include("bbs.hrl").
+
 -behaviour(gen_server).
 
 %% API
@@ -78,7 +80,8 @@ handle_call(_Request, _From, State = #bbs_lobby_state{}) ->
   {noreply, NewState :: #bbs_lobby_state{}} |
   {noreply, NewState :: #bbs_lobby_state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #bbs_lobby_state{}}).
-handle_cast(_Request, State = #bbs_lobby_state{}) ->
+handle_cast({new_bubble, #agent{} = BubbleSpecs}, State = #bbs_lobby_state{}) ->
+  supervisor:start_child(bubbles_sup, [BubbleSpecs]),
   {noreply, State}.
 
 %% @private
