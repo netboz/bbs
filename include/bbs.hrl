@@ -2,5 +2,4 @@
 
 -record(agent,{
   name :: binary(),
-  aid_entries,
   startup_ontologies = [] :: list()}).
