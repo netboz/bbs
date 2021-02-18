@@ -47,11 +47,11 @@ new_bubble(#agent{} = Bubble_specs) ->
 %% Unit tests
 
 new_bubble_test() ->
-  BubSpecs = #agent{name = <<"bubble">>, aid_entries = [],
+  BubSpecs = #agent{name = <<"bubble">>,
     startup_ontologies =
     [
-      {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets}
-     % {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
-     % {ontology, <<"bbs:agent">>, [], bbs_db_ets}
+      {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
+      {ontology, <<"bbs:agent">>, [], bbs_db_ets},
+      {ontology, <<"bbs:bubble">>, [], bbs_db_ets}
     ]},
   new_bubble(BubSpecs).
