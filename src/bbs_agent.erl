@@ -18,8 +18,11 @@
 %% API
 -export([start_link/1]).
 
-%% gen_statem callbacks
--export([init/1, ontologies_init/3, running/3, handle_event/4, terminate/3,
+%% gen_statem States
+-export([ontologies_init/3, running/3]).
+
+%% gen_statem other callbacks
+-export([init/1, terminate/3,
   code_change/4, callback_mode/0]).
 
 %% Used to retrieve and store initial state for an ontology
@@ -73,7 +76,7 @@ init(AgentSpecs) ->
 %% @doc This function is called by a gen_statem when it needs to find out
 %% the callback mode of the callback module.
 callback_mode() ->
-  state_functions.
+  [state_functions, state_enter].
 
 %%------------------------------------------------------------------------------
 %% @private
@@ -115,9 +118,12 @@ ontologies_init(cast, {init_next, [{ontology, Ns, Params, DbMod} | NextOntos]}, 
         Else ->
           ?ERROR_MSG("Ontology unexpected result :~p", [Else])
       end,
-
       {next_state, ontologies_init, State, [{next_event, cast, {init_next, NextOntos}}]}
-  end.
+  end;
+
+ontologies_init(cast, Else, State) ->
+  ?WARNING_MSG("Unmanaged message in ontologies_init :~p  agent ~p", [Else, State#state.uuid]),
+  {next_state, ontologies_init, State}.
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -136,24 +142,24 @@ running(cast, {NameSpace, Fact}, State) ->
   trigger_stims(NameSpace,Fact),
   {next_state, running, State};
 
+running(info, {'EXIT', Pid, Reason}, State) ->
+  ?INFO_MSG("Agent ~p : Child ~p disconnected with reason :~p",[State#state.uuid, Pid, Reason]),
+  %% We are calling bbs:bbs_agent ontology per default to manage child process termination
+  %% This can be parametrized later on.
+  trigger_stims("bbs:agent", {child_exited, Pid, Reason}),
+  {next_state, running, State};
+
 running(UnkMesTyp, UnkMes, State) ->
   ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",[State#state.uuid, {UnkMesTyp,UnkMes}]),
   {next_state, running, State}.
-
-%% @private
-%% @doc If callback_mode is handle_event_function, then whenever a
-%% gen_statem receives an event from call/2, cast/2, or as a normal
-%% process message, this function is called.
-handle_event(_EventType, _EventContent, _StateName, State = #state{}) ->
-  NextStateName = the_next_state_name,
-  {next_state, NextStateName, State}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it is about to
 %% terminate. It should be the opposite of Module:init/1 and do any
 %% necessary cleaning up. When it returns, the gen_statem terminates with
 %% Reason. The return value is ignored.
-terminate(_Reason, _StateName, _State = #state{}) ->
+terminate(_Reason, _StateName, State = #state{}) ->
+  ?INFO_MSG("Agent :~p   PID :~p terminating",[State#state.uuid, self()]),
   ok.
 
 %% @private
