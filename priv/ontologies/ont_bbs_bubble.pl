@@ -1,13 +1,22 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Initialisation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-action(initialize(Ns, Ag, Params), [], initialized(Ns, Ag, Params)).
+action(initialize(Ns, Ag, Params), [child("test_bob",[]),
+    "bbs:agent"::react_on("bbs:agent", child_exited(Pid, Reason), "bbs:bubble", signal_process_exit(Pid, Reason)),
+    stopped("test_bob")], initialized(Ns, Ag, Params)).
 
 initialize(AgentId, Namespace, Params) :-
     assert(initialized(Ns, Ag, Params)).
 
-action(boot(Ns, Ag, Params), [], booted(Ns, Ag, Params)).
+% @doc: Start a nea child process running given agent specs
+action(assert(child(Name, Ontologies)),[spawn_child(agent(Name, Ontologies), Pid), assert(process(Name, Pid))], child(Name, Ontologies)).
 
-boot(Ns, Ag, Params).
+% @doc: Stop child process ( process will terminate current goal and terminates )
+action(stop_child(Pid), [process(Name, Pid)], stopped(Name)).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-action(spawn_agent(Name, Ontologies, Pid), [], agent(Name, _AIDs, Ontologies), Pid).
+% @doc: Abruptly terminate child ( process stops any goal it was running and terminates )
+action(terminate_child(Pid), [process(Name, Pid)], terminated(Name)).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Utilities %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+signal_process_exit(Pid, Reason) :-
+    log(info("Process ~p exited with reason ~p", [Pid, Reason])).
