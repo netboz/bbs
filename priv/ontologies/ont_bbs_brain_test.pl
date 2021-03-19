@@ -18,3 +18,4 @@ external_predicate(second_solution).
 valid_external_solution(second_solution).
 
 
+

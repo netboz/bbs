@@ -18,13 +18,13 @@
 %==============================================================================
 
 %% Ontologies registration/instanciation
--export([get_registered_ont_desc/1, register_ontologies/1, build_ontology/3]).
+-export([get_registered_ont_desc/1, register_ontologies/1, create_kb_store/3, build_ontology/3]).
 
 % Built in predicates
 -export([lager_predicate/3, prove_external_ontology_predicate/3]).
 
 % Utilities
--export([prove/3, string_to_eterm/1]).
+-export([prove/2, string_to_eterm/1, put_onto_hooks/3]).
 
 %% Built-in (erlang) Predicates included into all ontologies that will be registered
 -define(COMMON_BUILD_IN_PREDS, [
@@ -172,15 +172,17 @@ build_ontology(AgentId, NameSpace, DbMod) ->
       {error, ontology_unavailable};
     [{_, _TextPredList, _BuiltInPredsList} = OntologyDescription] ->
       %% Create ontology Kb
-      {ok, #est{} = InitialOntoState} = create_ontology_store(NameSpace, AgentId, DbMod),
+      {ok, #est{} = InitialOntoState} = create_kb_store(NameSpace, AgentId, DbMod),
       %% TODO: Right now we return database table Id as ontology state, this needs to be changed
       Tid = InitialOntoState#est.db#db.ref,
-      %% Load predicates common to all ontologies
-      {ok, StateWithCommonPredicates} = load_common_predicates(InitialOntoState),
-      ?INFO_MSG("Loaded common predicates into :~p",[NameSpace]),
+      DbWithAPIs = lists:foldl(fun (M, Db) -> M:load(Db) end, InitialOntoState#est.db,
+        [erlog_bips,
+          erlog_lib_dcg,
+          erlog_lib_lists
+        ]),
       %% Load Ontology predicates
-      {ok, ReadyState} = load_ontology_predicates(OntologyDescription, StateWithCommonPredicates),
-      ?INFO_MSG("Loaded predicates for :~p",[NameSpace]),
+      {ok, ReadyState} = load_ontology_predicates(OntologyDescription, InitialOntoState#est{db = DbWithAPIs}),
+      ?INFO_MSG("Loaded all predicates for :~p",[NameSpace]),
       %% Load the predicates writen in erlang if needed, add them to Kb
       %%{ok, StateWithBuiltInPredicates} = load_built_in_predicates(OntologyDescription, StateWithBasePredicates),
       %% Load the predicates writen in Prolog, add them to Kb
@@ -188,12 +190,15 @@ build_ontology(AgentId, NameSpace, DbMod) ->
       {ok, {Tid, ReadyState}}
   end.
 
-create_ontology_store(NameSpace, AgentId, DbMod) ->
+create_kb_store(NameSpace, AgentId, DbMod) ->
   case erlog_int:new(DbMod, [NameSpace, AgentId])  of
     {ok, #est{} = Est} ->
-      {ok, Est};
+      %% Load predicates common to all ontologies
+      load_common_predicates(Est);
+
     {error, Reason} ->
-      ?ERROR_MSG("Couldn't create ontology knowledge store:~p",[Reason])
+      ?ERROR_MSG("Couldn't create ontology knowledge store:~p",[Reason]),
+      {error, Reason}
   end.
 
 %%------------------------------------------------------------------------------
@@ -316,9 +321,7 @@ load_ontology_built_in_predicates([PredicatesModule|OtherModules], Kb) when is_a
 load_ontology_built_in_predicate(OntMod, Kb) when is_atom(OntMod) ->
   try OntMod:external_predicates() of
     BuiltInPredicate when is_list(BuiltInPredicate) ->
-      {ok, NewKb } = load_built_in_predicates(BuiltInPredicate, Kb),
-      ?INFO_MSG("Added external predicates from : ~p, predicates : ~p", [OntMod, BuiltInPredicate]),
-      {ok,NewKb};
+      load_built_in_predicates(BuiltInPredicate, Kb);
     Else -> Else
   catch
     Else ->
@@ -364,9 +367,9 @@ lager_predicate({_Atom, Type, Label, Arguments}, Next0, #est{} = St) ->
 
 prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOntologyPredicate},
     Next0, #est{bs=ParentBindings, cps=ParentCps, vn=ParentVn} = ParentOntologyState) ->
-  ?INFO_MSG("Proving external predicate : ~p",[ExternalOntologyPredicate]),
-
-  case bbs_agent:get_ontology_state_from_namespace(ExternalOntologyNameSpace) of
+  DDExternalOntNs = erlog_int:dderef(ExternalOntologyNameSpace, ParentBindings),
+  %%?INFO_MSG("Proving external predicate : ~p::~p",[ExternalOntologyNameSpace, ExternalOntologyPredicate]),
+  case bbs_agent:get_ontology_state_from_namespace(DDExternalOntNs) of
     #est{} = ExternalOntologyState ->
       DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
       case erlog_int:prove_body([DDExternalPredicate], ExternalOntologyState#est{bs = erlog_int:new_bindings()}) of
@@ -386,7 +389,7 @@ prove_external_ontology_predicate({_Atom, ExternalOntologyNameSpace, ExternalOnt
           OtherResult
       end;
     undefined ->
-      ?ERROR_MSG("External ontology not found : ~p",[ExternalOntologyNameSpace]),
+      ?ERROR_MSG("External ontology not found : ~p",[DDExternalOntNs]),
       erlog_int:fail(ParentOntologyState)
   end.
 
@@ -405,13 +408,41 @@ fail_external_predicate({_LCp, _LCps, _Lst}, Next0, ParentOntologyState, Externa
       DDResultPredicate = erlog_int:dderef(ExternalPredicate,NewExternalState#est.bs),
       {succeed, NewBindings} = erlog_int:unify(DDResultPredicate, ExternalPredicate, ParentOntologyState#est.bs),
       erlog_int:prove_body(Next0, ParentOntologyState#est{bs = NewBindings});
-    fail ->
+    {fail, #est{}} ->
       erlog_int:fail(ParentOntologyState)
   end.
 
 %-------------------------------------------------------------------------------
 %  Utilities
 %-------------------------------------------------------------------------------
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% Add a hook ( namespace:predicate(parameters) ) to react to.
+%% @end
+%%------------------------------------------------------------------------------
+
+%% todo: review.
+put_onto_hooks({Ns, Functor}, {ArgPat, Next0, State}, Options) when is_record(State, est) ->
+  ?INFO_MSG("setting hook on :~p",[{Ns,Functor}]),
+  case get({reaction, Ns, Functor}) of
+    undefined ->
+      put({reaction, Ns, Functor},  [{ArgPat, Next0, State, Options}]);
+    [] ->
+      put({reaction, Ns, Functor},  [{ArgPat, Next0, State, Options}]);
+    List ->
+      put({reaction, Ns, Functor},  List ++ [{ArgPat, Next0, State, Options}])
+  end;
+
+put_onto_hooks({Ns, Functor}, {ArgPat, NsReact, ReactPred}, Options) when is_binary(Ns) ->
+  case get({reaction, Ns, Functor}) of
+    undefined ->
+      put({reaction, Ns, Functor},  [{ArgPat, NsReact, ReactPred, Options}]);
+    [] ->
+      put({reaction, Ns, Functor},  [{ArgPat, NsReact, ReactPred, Options}]);
+    List ->
+      put({reaction, Ns, Functor},  List ++ [{ArgPat, NsReact, ReactPred, Options}])
+  end.
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -440,5 +471,14 @@ string_to_eterm(String) ->
 %% @end
 %%------------------------------------------------------------------------------
 
-prove(InitialPredicate, RootPredicateInitialKb, _Options) ->
-  erlog_int:prove_goal(InitialPredicate, RootPredicateInitialKb).
+prove(NameSpace, Predicate) when is_binary(NameSpace)->
+  ?INFO_MSG("Proving :~p",[{NameSpace,Predicate}]),
+  case bbs_agent:get_ontology_state_from_namespace(NameSpace) of
+    #est{} = Kb ->
+      prove(Kb, Predicate);
+    undefined ->
+      fail
+  end;
+
+prove(Kb, Predicate) ->
+  erlog_int:prove_goal(Predicate, Kb).

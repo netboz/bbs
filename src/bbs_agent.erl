@@ -65,6 +65,8 @@ init(AgentSpecs) ->
                   ?ERROR_MSG("Invalid name specified :~p ",[_InvalidName]),
                   zuuid:binary(zuuid:v4())
               end,
+  %% We store agent name in process dictionnary for easy retrieval during predicate prooving process
+  put(agent_name, AgentName),
 
   %% Finish init and start ontologies initialisation
   {ok, ontologies_init, #state{
@@ -107,11 +109,11 @@ ontologies_init(cast, {init_next, [{ontology, Ns, Params, DbMod} | NextOntos]}, 
       undefined = store_ontology_state_on_namespace(Ns, KbReady),
 
       case erlog_int:prove_goal({goal,{initialized, State#state.uuid, Ns, Params}}, KbReady) of
-        {succeed, InitializedOntoState} ->
+        {succeed, _InitializedOntoState} ->
           %% Register the raw kb state into process stack under key Namespace
           ok;
-        {{paused, Ns, PredPatFunc, PredPatParams}, Next0, St} ->
-           ontolog:put_onto_hooks({Ns, PredPatFunc}, {PredPatParams, Next0, St},[once]);
+        {{paused, _Nanmespace, _Predicate}, _Next0, St} ->
+          ok;
         {fail, FStatr} ->
           ?ERROR_MSG("Ontology initialisation failed :~p with state: ~p", [Ns, FStatr]),
           {error, preinit_failled};
@@ -146,7 +148,7 @@ running(info, {'EXIT', Pid, Reason}, State) ->
   ?INFO_MSG("Agent ~p : Child ~p disconnected with reason :~p",[State#state.uuid, Pid, Reason]),
   %% We are calling bbs:bbs_agent ontology per default to manage child process termination
   %% This can be parametrized later on.
-  trigger_stims("bbs:agent", {child_exited, Pid, Reason}),
+  trigger_stims(<<"bbs:agent">>, {child_exited, Pid, Reason}),
   {next_state, running, State};
 
 running(UnkMesTyp, UnkMes, State) ->
@@ -180,12 +182,8 @@ code_change(_OldVsn, StateName, State = #state{}, _Extra) ->
 %%------------------------------------------------------------------------------
 
 prove(NameSpace, Predicate) ->
-  prove(NameSpace, Predicate, []).
-
-prove(NameSpace, Predicate, Options) ->
   %TODO: next instruction fail, should mimic the failling of a prolog predicate
-  OntologyInitialState = get_ontology_state_from_namespace(NameSpace),
-  bbs_ontology:prove(Predicate, OntologyInitialState, Options).
+  bbs_ontology:prove(NameSpace, Predicate).
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -218,171 +216,8 @@ store_ontology_state_on_namespace(Ns, KbDb) ->
 %%------------------------------------------------------------------------------
 
 trigger_stims(NameSpace, PredicateIn) ->
-  case get_triggers_predicate(NameSpace, PredicateIn) of
-    %%We have a found a st
-    [_FirstCandidate|_OtherCandidates] = ListOfReactionCandidates ->
-      %% Functor of predicate
-      FactFuncIn = element(1,PredicateIn),
-      %%?INFO_MSG("Stm list :~p",[ListOfCandidatesReaction]),
-      FList = [{El,PredicateIn} || El <- ListOfReactionCandidates],
-      %%?INFO_MSG("FList :~p",[lists:nth(1,FList)]),
-      Result = lists:foldl(fun filter_stim/2, {[],[]}, FList),
-      %%?INFO_MSG("Stored stims :~p",[Result]),
-      {DiscardedPreds, StimToBeProcessed} = Result,
-      ?INFO_MSG("Stim to be processsed :~p",[StimToBeProcessed]),
-      %%?INFO_MSG("Stim discarded : ~p",[DiscardedPreds]),
-      KeptAfterProcessingPreds = lists:filtermap(fun process_stim/1,StimToBeProcessed),
-      %%?INFO_MSG("Kept after processing :~p",[KeptAfterProcessingPreds]),
-      FinalNewHooks = DiscardedPreds ++ KeptAfterProcessingPreds,
-      case FinalNewHooks of
-        [] -> ?INFO_MSG("Erasing :~p",[{reaction, iolist_to_binary(NameSpace),FactFuncIn}]),
-          erase({reaction, iolist_to_binary(NameSpace),FactFuncIn});
-        _ ->  put({reaction, iolist_to_binary(NameSpace),FactFuncIn}, DiscardedPreds ++ KeptAfterProcessingPreds)
-      end;
-
-    [] ->
-      ?INFO_MSG("No reaction to ~p:~p found",[NameSpace,PredicateIn]),
-      ok
-  end.
-
-
-get_triggers_predicate(NameSpace, Predicate) ->
-  %% Get predicate functor
-  InputPredicate = element(1,Predicate),
-  %% Right now triggers are stored into process state.
-  %% todo: store triggers somewhere else
-  case get({reaction, iolist_to_binary(NameSpace), InputPredicate}) of
-    undefined -> [];
-    ListOfPredicate -> ListOfPredicate
-  end.
+  prove(<<"bbs:agent">>, {goal, {stim_processed, NameSpace, PredicateIn}}).
 
 
 
-unify_action_hook(PredicateIn, PredPattern) ->
-  case erlog_int:unify_head(PredicateIn, PredPattern, dict:new(), 1) of
-    fail -> false;
-    {succeed, Bindings, _State, _Vn} -> {succeed, Bindings}
-  end.
-
-filter_stim({{PredPatParams, Next0, St, Options}, StimPattern},{NotMatchingPreds, MatchingPreds}) when is_record(St, est)->
-  StimPatternFunctor = element(1, StimPattern),
-  %%?INFO_MSG("Unifying : ~p      ~p",[StimPattern, list_to_tuple([StimPatternFunctor] ++ PredPatParams)]),
-  case unify_action_hook(StimPattern, list_to_tuple([StimPatternFunctor] ++ PredPatParams)) of
-    {succeed, Bindings} ->
-      {NotMatchingPreds, MatchingPreds ++ [{{StimPatternFunctor, PredPatParams}, Next0, St, Options, Bindings}]};
-    _ ->
-      {NotMatchingPreds ++ [{PredPatParams, Next0, St, Options}], MatchingPreds}
-  end;
-
-
-filter_stim({{StimReactArgs, Reaction_ont, ReactionPred, Options}, StimPattern}, {NotMatchingPreds, MatchingPreds}) ->
-  StimPatternFunctor = element(1, StimPattern),
-  case unify_action_hook(StimPattern, list_to_tuple([StimPatternFunctor] ++ StimReactArgs)) of
-    {succeed, Bindings} ->
-      {NotMatchingPreds, MatchingPreds ++ [{{StimPatternFunctor, StimReactArgs}, Reaction_ont, ReactionPred, Options, Bindings}]};
-    _ ->
-      {NotMatchingPreds ++ [{StimReactArgs, Reaction_ont, ReactionPred, Options}], MatchingPreds}
-  end;
-
-filter_stim(A,B) ->
-  ?WARNING_MSG("Unmanaged stim :~p",[A]),
-  B.
-
-
-
-process_stim({{PredFunc,PredParams}, Next0, #est{} = St, Options, Bindings}) ->
-  %% TODO: change next function call to a API into module ontology
-
-%%  BindingsAsDict = dict:from_list(Bindings),
-%%  FunMdrge = fun(Key, Value1, Value2) -> ?INFO_MSG("Conflict Merging Dict :~p",[{Key, Value1, Value2}]) end,
-%%  NewBindings = dict:merge(FunMdrge, St#est.bs, BindingsAsDict),
-
-  %%?INFO_MSG("--> Back wait for : Next0 ~p  ~n CPS :~p",[Next0,St#est.cps]),
-  %%?INFO_MSG("Stored DB :~p",[St#est.db]),
-  case ontology:prove(Next0, St, Bindings) of
-    {{paused, Ns, PredPatFunc,PredPatParams}, Next2, St2} ->
-      %% TODO: This is bad, Db.ref should be considered as blackbox
-      {CurrentNs,_DbKey} = St#est.db#db.ref,
-      %%?INFO_MSG("Ns : ~p    CurrentNs :~p",[Ns,CurrentNs]),
-      if
-        (Ns == CurrentNs) andalso (PredPatFunc == PredFunc) ->
-          case lists:member(once,Options) of
-            true ->
-              %%?INFO_MSG("Deleting hook :~p",[PredParams]),
-              %% We replace the hook to be deleted with the new one
-              {true, {PredPatParams, Next2, St2, [once]}};
-            _ ->
-              %% We need to keep botth hooks
-              %% return a list of previous hook + new one, flattenned later on :(
-              {true, [{PredParams, Next0, St, Options},{PredPatParams, Next2, St2, [once]}]}
-          end;
-      %%Add to current hooks;
-        true ->
-          %% Hook into another NS, simply add it
-          ontology:put_onto_hooks({iolist_to_binary([Ns]), PredPatFunc}, {PredPatParams, Next2, St2},[once]),
-          case lists:member(once,Options) of
-            true ->
-              %%?INFO_MSG("Deleting hook :~p",[PredParams]),
-              false;
-            _ ->
-              {true, {PredParams, Next0, St, Options}}
-          end
-      end ;
-
-    _E ->
-      case lists:member(once,Options) of
-        true ->
-          %%?INFO_MSG("Deleting hook :~p",[PredParams]),
-          false;
-        _ ->
-          {true, {PredParams, Next0, St, Options}}
-      end
-  end;
-
-
-process_stim({{PredFunc,PredParams}, Reaction_ont, ReactionPred, Options, Bindings}) ->
-  %%?INFO_MSG("Reacting to ~p ~p with ~p  ~p",[PredFunc,PredParams,Reaction_ont, ReactionPred]),
-  %% case ontology:prove(Reaction_ont, ReactionPred, dict:from_list(Bindings)) of
-  %%AgKey = gproc:get_value({p, l, {aid_entries, name}}),
-
-  %%{ok, ErlState} = erlog_int:new(erlog_db_bbs, {AgKey,Reaction_ont}),
-
-  %%?INFO_MSG("Bindings :~p",[Bindings]),
-  %%?INFO_MSG("rection pred  :~p",[ReactionPred]),
-
-  case ontology:prove(Reaction_ont, ReactionPred, Bindings) of
-    {{paused, Ns, PredPatFunc, PredPatParams}, Next0, St} ->
-      {_AgName,CurrentNs} = St#est.db#db.ref,
-      if
-        (Ns == CurrentNs) andalso (PredPatFunc == PredFunc) ->
-          case lists:member(once,Options) of
-            true ->
-              %% We replace current hook with new one
-              {true, {PredPatParams, Next0, St, [once]}};
-            _ ->
-              %% We need to keep both hooks.
-              {true, [{PredParams, Reaction_ont, ReactionPred, Options},  {PredPatParams, Next0, St, [once]}]}
-          end;
-        true ->
-          ontology:put_onto_hooks({Ns, PredPatFunc}, {PredPatParams, Next0, St},[once]),
-          case lists:member(once,Options) of
-            true ->
-              %%?INFO_MSG("Deleting hook",[]),
-              false;
-            _ ->
-              {true, {PredParams, Reaction_ont, ReactionPred, Options}}
-          end
-      end;
-
-    _E->
-      %%?INFO_MSG("Process stimm result :~p",[_E]),
-      case lists:member(once,Options) of
-        true ->
-          %%?INFO_MSG("Deleting hook",[]),
-          false;
-        _ ->
-          {true, {PredParams, Reaction_ont, ReactionPred, Options}}
-      end
-
-  end.
 

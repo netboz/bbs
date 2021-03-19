@@ -18,7 +18,7 @@
 %% new(InitArgs) -> Db.
 
 new([NameSpace, AgentId]) ->
-	Db = ets:new(binary_to_atom(iolist_to_binary([AgentId, "_", NameSpace])), [set, protected, {keypos,1}]),
+	Db = ets:new(binary_to_atom(iolist_to_binary([AgentId, "_", NameSpace]), utf8), [set, protected, {keypos,1}]),
 	{NameSpace, Db}.
 
 %% add_built_in(Functor, Database) -> NewDatabase.
@@ -72,7 +72,7 @@ assertz_clause({NameSpace, Db}, Functor, Head, Body) ->
 %%  Retract (remove) the clause with tag ClauseTag from the list of
 %%  clauses of Functor.
 
-retract_clause(F, Ct, {NameSpace, Db}) ->
+retract_clause({NameSpace, Db}, F, Ct) ->
 	case ets:lookup(Db, F) of
 		[{_,built_in}] -> error;
 		[{_,code,_}] -> error;
@@ -122,7 +122,7 @@ get_procedure_type({_NameSpace, Db}, Functor) ->
 
 %% get_interp_functors(Database) -> [Functor].
 
-get_interpreted_functors({NameSpace, Db}) ->
+get_interpreted_functors({_NameSpace, Db}) ->
 	NewDb = ets:foldl(fun ({Func,clauses,_,_}, Fs) -> [Func|Fs];
 		(_, Fs) -> Fs end, [], Db),
-	{NameSpace, NewDb}.
+    NewDb.

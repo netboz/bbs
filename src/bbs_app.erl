@@ -17,6 +17,7 @@
 
 start(_StartType, _StartArgs) ->
   register(bbs, self()),
+
   % Create ontologies index
   ets:new(?ONTO_STORE,
     [named_table, set, protected,
