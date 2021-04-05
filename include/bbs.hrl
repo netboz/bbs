@@ -1,5 +1,3 @@
--define(ONTO_STORE,onto_store).
+-define(ONTO_STORE, onto_store).
 
--record(agent,{
-  name :: binary(),
-  startup_ontologies = [] :: list()}).
+-record(agent, {name :: binary(), startup_ontologies = [] :: list()}).

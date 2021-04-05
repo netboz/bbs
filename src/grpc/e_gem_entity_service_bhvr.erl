@@ -9,17 +9,17 @@
 
 %% @doc Unary RPC
 -callback create_entity(ctx:ctx(), entity_service_pb:create_entity_params()) ->
-    {ok, entity_service_pb:entity_creation_result(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                           {ok, entity_service_pb:entity_creation_result(), ctx:ctx()} |
+                           grpcbox_stream:grpc_error_response().
 %% @doc Unary RPC
 -callback activate_entity(ctx:ctx(), entity_service_pb:m_entity_id()) ->
-    {ok, entity_service_pb:generic_result_code(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                             {ok, entity_service_pb:generic_result_code(), ctx:ctx()} |
+                             grpcbox_stream:grpc_error_response().
 %% @doc Unary RPC
 -callback deactivate_entity(ctx:ctx(), entity_service_pb:m_entity_id()) ->
-    {ok, entity_service_pb:generic_result_code(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                               {ok, entity_service_pb:generic_result_code(), ctx:ctx()} |
+                               grpcbox_stream:grpc_error_response().
 %% @doc Unary RPC
 -callback delete_entity(ctx:ctx(), entity_service_pb:m_entity_id()) ->
-    {ok, entity_service_pb:generic_result_code(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                           {ok, entity_service_pb:generic_result_code(), ctx:ctx()} |
+                           grpcbox_stream:grpc_error_response().

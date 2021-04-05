@@ -16,7 +16,8 @@
 -export([find_msg_def/1, fetch_msg_def/1]).
 -export([find_enum_def/1, fetch_enum_def/1]).
 -export([enum_symbol_by_value/2, enum_value_by_symbol/2]).
--export(['enum_symbol_by_value_generic_result_code.enum_generic_result_code'/1, 'enum_value_by_symbol_generic_result_code.enum_generic_result_code'/1]).
+-export(['enum_symbol_by_value_generic_result_code.enum_generic_result_code'/1,
+         'enum_value_by_symbol_generic_result_code.enum_generic_result_code'/1]).
 -export([get_service_names/0]).
 -export([get_service_def/1]).
 -export([get_rpc_names/1]).
@@ -45,529 +46,1382 @@
 -export([get_protos_by_pkg_name_as_fqbin/1]).
 -export([gpb_version_as_string/0, gpb_version_as_list/0]).
 
-
 %% enumerated types
--type 'generic_result_code.enum_generic_result_code'() :: ok | failed | not_found | invalid_parameter | unimplemented | deactivate_first | activate_first | entity_not_initialised | component_already_exists.
+-type 'generic_result_code.enum_generic_result_code'() ::
+    ok |
+    failed |
+    not_found |
+    invalid_parameter |
+    unimplemented |
+    deactivate_first |
+    activate_first |
+    entity_not_initialised |
+    component_already_exists.
+
 -export_type(['generic_result_code.enum_generic_result_code'/0]).
 
 %% message types
--type camera_component_parameters() ::
-      #{entity_id               => m_entity_id()    % = 1
-       }.
-
--type m_entity_id() ::
-      #{entity_id               => non_neg_integer() % = 1, 64 bits
-       }.
-
+-type camera_component_parameters() :: #{entity_id => m_entity_id()}.    % = 1
+-type m_entity_id() :: #{entity_id => non_neg_integer()}. % = 1, 64 bits
 -type generic_result_code() ::
-      #{result_code             => ok | failed | not_found | invalid_parameter | unimplemented | deactivate_first | activate_first | entity_not_initialised | component_already_exists | integer() % = 1, enum generic_result_code.enum_generic_result_code
-       }.
-
+    #{result_code =>
+          ok |
+          failed |
+          not_found |
+          invalid_parameter |
+          unimplemented |
+          deactivate_first |
+          activate_first |
+          entity_not_initialised |
+          component_already_exists |
+          integer()}. % = 1, enum generic_result_code.enum_generic_result_code
 -type vector_3() ::
-      #{x                       => float() | integer() | infinity | '-infinity' | nan, % = 1
-        y                       => float() | integer() | infinity | '-infinity' | nan, % = 2
-        z                       => float() | integer() | infinity | '-infinity' | nan % = 3
-       }.
+    #{x => float() | integer() | infinity | '-infinity' | nan,
+      y => float() | integer() | infinity | '-infinity' | nan,
+      z => float() | integer() | infinity | '-infinity' | nan}. % = 1
+
+                                                                                       % = 2
+ % = 3
 
 -type vector_4() ::
-      #{w                       => float() | integer() | infinity | '-infinity' | nan, % = 1
-        x                       => float() | integer() | infinity | '-infinity' | nan, % = 2
-        y                       => float() | integer() | infinity | '-infinity' | nan, % = 3
-        z                       => float() | integer() | infinity | '-infinity' | nan % = 4
-       }.
+    #{w => float() | integer() | infinity | '-infinity' | nan,
+      x => float() | integer() | infinity | '-infinity' | nan,
+      y => float() | integer() | infinity | '-infinity' | nan,
+      z => float() | integer() | infinity | '-infinity' | nan}. % = 1
 
--export_type(['camera_component_parameters'/0, 'm_entity_id'/0, 'generic_result_code'/0, 'vector_3'/0, 'vector_4'/0]).
+                                                                                       % = 2
+ % = 3
 
--spec encode_msg(camera_component_parameters() | m_entity_id() | generic_result_code() | vector_3() | vector_4(), atom()) -> binary().
-encode_msg(Msg, MsgName) when is_atom(MsgName) -> encode_msg(Msg, MsgName, []).
+                                                                                      % = 4
 
--spec encode_msg(camera_component_parameters() | m_entity_id() | generic_result_code() | vector_3() | vector_4(), atom(), list()) -> binary().
+-export_type([camera_component_parameters/0, m_entity_id/0, generic_result_code/0,
+              vector_3/0, vector_4/0]).
+
+-spec encode_msg(camera_component_parameters() |
+                 m_entity_id() |
+                 generic_result_code() |
+                 vector_3() |
+                 vector_4(),
+                 atom()) ->
+                    binary().
+encode_msg(Msg, MsgName) when is_atom(MsgName) ->
+    encode_msg(Msg, MsgName, []).
+
+-spec encode_msg(camera_component_parameters() |
+                 m_entity_id() |
+                 generic_result_code() |
+                 vector_3() |
+                 vector_4(),
+                 atom(),
+                 list()) ->
+                    binary().
 encode_msg(Msg, MsgName, Opts) ->
     case proplists:get_bool(verify, Opts) of
-      true -> verify_msg(Msg, MsgName, Opts);
-      false -> ok
+        true ->
+            verify_msg(Msg, MsgName, Opts);
+        false ->
+            ok
     end,
     TrUserData = proplists:get_value(user_data, Opts),
     case MsgName of
-      camera_component_parameters -> encode_msg_camera_component_parameters(id(Msg, TrUserData), TrUserData);
-      m_entity_id -> encode_msg_m_entity_id(id(Msg, TrUserData), TrUserData);
-      generic_result_code -> encode_msg_generic_result_code(id(Msg, TrUserData), TrUserData);
-      vector_3 -> encode_msg_vector_3(id(Msg, TrUserData), TrUserData);
-      vector_4 -> encode_msg_vector_4(id(Msg, TrUserData), TrUserData)
+        camera_component_parameters ->
+            encode_msg_camera_component_parameters(id(Msg, TrUserData), TrUserData);
+        m_entity_id ->
+            encode_msg_m_entity_id(id(Msg, TrUserData), TrUserData);
+        generic_result_code ->
+            encode_msg_generic_result_code(id(Msg, TrUserData), TrUserData);
+        vector_3 ->
+            encode_msg_vector_3(id(Msg, TrUserData), TrUserData);
+        vector_4 ->
+            encode_msg_vector_4(id(Msg, TrUserData), TrUserData)
     end.
 
-
-encode_msg_camera_component_parameters(Msg, TrUserData) -> encode_msg_camera_component_parameters(Msg, <<>>, TrUserData).
-
+encode_msg_camera_component_parameters(Msg, TrUserData) ->
+    encode_msg_camera_component_parameters(Msg, <<>>, TrUserData).
 
 encode_msg_camera_component_parameters(#{} = M, Bin, TrUserData) ->
     case M of
-      #{entity_id := F1} ->
-	  begin
-	    TrF1 = id(F1, TrUserData),
-	    if TrF1 =:= undefined -> Bin;
-	       true -> e_mfield_camera_component_parameters_entity_id(TrF1, <<Bin/binary, 10>>, TrUserData)
-	    end
-	  end;
-      _ -> Bin
+        #{entity_id := F1} ->
+            begin
+                TrF1 = id(F1, TrUserData),
+                if TrF1 =:= undefined ->
+                       Bin;
+                   true ->
+                       e_mfield_camera_component_parameters_entity_id(TrF1,
+                                                                      <<Bin/binary, 10>>,
+                                                                      TrUserData)
+                end
+            end;
+        _ ->
+            Bin
     end.
 
-encode_msg_m_entity_id(Msg, TrUserData) -> encode_msg_m_entity_id(Msg, <<>>, TrUserData).
-
+encode_msg_m_entity_id(Msg, TrUserData) ->
+    encode_msg_m_entity_id(Msg, <<>>, TrUserData).
 
 encode_msg_m_entity_id(#{} = M, Bin, TrUserData) ->
     case M of
-      #{entity_id := F1} ->
-	  begin
-	    TrF1 = id(F1, TrUserData),
-	    if TrF1 =:= 0 -> Bin;
-	       true -> e_varint(TrF1, <<Bin/binary, 8>>, TrUserData)
-	    end
-	  end;
-      _ -> Bin
+        #{entity_id := F1} ->
+            begin
+                TrF1 = id(F1, TrUserData),
+                if TrF1 =:= 0 ->
+                       Bin;
+                   true ->
+                       e_varint(TrF1, <<Bin/binary, 8>>, TrUserData)
+                end
+            end;
+        _ ->
+            Bin
     end.
 
-encode_msg_generic_result_code(Msg, TrUserData) -> encode_msg_generic_result_code(Msg, <<>>, TrUserData).
-
+encode_msg_generic_result_code(Msg, TrUserData) ->
+    encode_msg_generic_result_code(Msg, <<>>, TrUserData).
 
 encode_msg_generic_result_code(#{} = M, Bin, TrUserData) ->
     case M of
-      #{result_code := F1} ->
-	  begin
-	    TrF1 = id(F1, TrUserData),
-	    if TrF1 =:= ok; TrF1 =:= 0 -> Bin;
-	       true -> 'e_enum_generic_result_code.enum_generic_result_code'(TrF1, <<Bin/binary, 8>>, TrUserData)
-	    end
-	  end;
-      _ -> Bin
+        #{result_code := F1} ->
+            begin
+                TrF1 = id(F1, TrUserData),
+                if TrF1 =:= ok; TrF1 =:= 0 ->
+                       Bin;
+                   true ->
+                       'e_enum_generic_result_code.enum_generic_result_code'(TrF1,
+                                                                             <<Bin/binary, 8>>,
+                                                                             TrUserData)
+                end
+            end;
+        _ ->
+            Bin
     end.
 
-encode_msg_vector_3(Msg, TrUserData) -> encode_msg_vector_3(Msg, <<>>, TrUserData).
-
+encode_msg_vector_3(Msg, TrUserData) ->
+    encode_msg_vector_3(Msg, <<>>, TrUserData).
 
 encode_msg_vector_3(#{} = M, Bin, TrUserData) ->
     B1 = case M of
-	   #{x := F1} ->
-	       begin
-		 TrF1 = id(F1, TrUserData),
-		 if TrF1 =:= 0.0 -> Bin;
-		    true -> e_type_float(TrF1, <<Bin/binary, 13>>, TrUserData)
-		 end
-	       end;
-	   _ -> Bin
-	 end,
+             #{x := F1} ->
+                 begin
+                     TrF1 = id(F1, TrUserData),
+                     if TrF1 =:= 0.0 ->
+                            Bin;
+                        true ->
+                            e_type_float(TrF1, <<Bin/binary, 13>>, TrUserData)
+                     end
+                 end;
+             _ ->
+                 Bin
+         end,
     B2 = case M of
-	   #{y := F2} ->
-	       begin
-		 TrF2 = id(F2, TrUserData),
-		 if TrF2 =:= 0.0 -> B1;
-		    true -> e_type_float(TrF2, <<B1/binary, 21>>, TrUserData)
-		 end
-	       end;
-	   _ -> B1
-	 end,
+             #{y := F2} ->
+                 begin
+                     TrF2 = id(F2, TrUserData),
+                     if TrF2 =:= 0.0 ->
+                            B1;
+                        true ->
+                            e_type_float(TrF2, <<B1/binary, 21>>, TrUserData)
+                     end
+                 end;
+             _ ->
+                 B1
+         end,
     case M of
-      #{z := F3} ->
-	  begin
-	    TrF3 = id(F3, TrUserData),
-	    if TrF3 =:= 0.0 -> B2;
-	       true -> e_type_float(TrF3, <<B2/binary, 29>>, TrUserData)
-	    end
-	  end;
-      _ -> B2
+        #{z := F3} ->
+            begin
+                TrF3 = id(F3, TrUserData),
+                if TrF3 =:= 0.0 ->
+                       B2;
+                   true ->
+                       e_type_float(TrF3, <<B2/binary, 29>>, TrUserData)
+                end
+            end;
+        _ ->
+            B2
     end.
 
-encode_msg_vector_4(Msg, TrUserData) -> encode_msg_vector_4(Msg, <<>>, TrUserData).
-
+encode_msg_vector_4(Msg, TrUserData) ->
+    encode_msg_vector_4(Msg, <<>>, TrUserData).
 
 encode_msg_vector_4(#{} = M, Bin, TrUserData) ->
     B1 = case M of
-	   #{w := F1} ->
-	       begin
-		 TrF1 = id(F1, TrUserData),
-		 if TrF1 =:= 0.0 -> Bin;
-		    true -> e_type_float(TrF1, <<Bin/binary, 13>>, TrUserData)
-		 end
-	       end;
-	   _ -> Bin
-	 end,
+             #{w := F1} ->
+                 begin
+                     TrF1 = id(F1, TrUserData),
+                     if TrF1 =:= 0.0 ->
+                            Bin;
+                        true ->
+                            e_type_float(TrF1, <<Bin/binary, 13>>, TrUserData)
+                     end
+                 end;
+             _ ->
+                 Bin
+         end,
     B2 = case M of
-	   #{x := F2} ->
-	       begin
-		 TrF2 = id(F2, TrUserData),
-		 if TrF2 =:= 0.0 -> B1;
-		    true -> e_type_float(TrF2, <<B1/binary, 21>>, TrUserData)
-		 end
-	       end;
-	   _ -> B1
-	 end,
+             #{x := F2} ->
+                 begin
+                     TrF2 = id(F2, TrUserData),
+                     if TrF2 =:= 0.0 ->
+                            B1;
+                        true ->
+                            e_type_float(TrF2, <<B1/binary, 21>>, TrUserData)
+                     end
+                 end;
+             _ ->
+                 B1
+         end,
     B3 = case M of
-	   #{y := F3} ->
-	       begin
-		 TrF3 = id(F3, TrUserData),
-		 if TrF3 =:= 0.0 -> B2;
-		    true -> e_type_float(TrF3, <<B2/binary, 29>>, TrUserData)
-		 end
-	       end;
-	   _ -> B2
-	 end,
+             #{y := F3} ->
+                 begin
+                     TrF3 = id(F3, TrUserData),
+                     if TrF3 =:= 0.0 ->
+                            B2;
+                        true ->
+                            e_type_float(TrF3, <<B2/binary, 29>>, TrUserData)
+                     end
+                 end;
+             _ ->
+                 B2
+         end,
     case M of
-      #{z := F4} ->
-	  begin
-	    TrF4 = id(F4, TrUserData),
-	    if TrF4 =:= 0.0 -> B3;
-	       true -> e_type_float(TrF4, <<B3/binary, 37>>, TrUserData)
-	    end
-	  end;
-      _ -> B3
+        #{z := F4} ->
+            begin
+                TrF4 = id(F4, TrUserData),
+                if TrF4 =:= 0.0 ->
+                       B3;
+                   true ->
+                       e_type_float(TrF4, <<B3/binary, 37>>, TrUserData)
+                end
+            end;
+        _ ->
+            B3
     end.
 
-e_mfield_camera_component_parameters_entity_id(Msg, Bin, TrUserData) -> SubBin = encode_msg_m_entity_id(Msg, <<>>, TrUserData), Bin2 = e_varint(byte_size(SubBin), Bin), <<Bin2/binary, SubBin/binary>>.
+e_mfield_camera_component_parameters_entity_id(Msg, Bin, TrUserData) ->
+    SubBin = encode_msg_m_entity_id(Msg, <<>>, TrUserData),
+    Bin2 = e_varint(byte_size(SubBin), Bin),
+    <<Bin2/binary, SubBin/binary>>.
 
-'e_enum_generic_result_code.enum_generic_result_code'(ok, Bin, _TrUserData) -> <<Bin/binary, 0>>;
-'e_enum_generic_result_code.enum_generic_result_code'(failed, Bin, _TrUserData) -> <<Bin/binary, 1>>;
-'e_enum_generic_result_code.enum_generic_result_code'(not_found, Bin, _TrUserData) -> <<Bin/binary, 2>>;
-'e_enum_generic_result_code.enum_generic_result_code'(invalid_parameter, Bin, _TrUserData) -> <<Bin/binary, 3>>;
-'e_enum_generic_result_code.enum_generic_result_code'(unimplemented, Bin, _TrUserData) -> <<Bin/binary, 4>>;
-'e_enum_generic_result_code.enum_generic_result_code'(deactivate_first, Bin, _TrUserData) -> <<Bin/binary, 5>>;
-'e_enum_generic_result_code.enum_generic_result_code'(activate_first, Bin, _TrUserData) -> <<Bin/binary, 6>>;
-'e_enum_generic_result_code.enum_generic_result_code'(entity_not_initialised, Bin, _TrUserData) -> <<Bin/binary, 7>>;
-'e_enum_generic_result_code.enum_generic_result_code'(component_already_exists, Bin, _TrUserData) -> <<Bin/binary, 8>>;
-'e_enum_generic_result_code.enum_generic_result_code'(V, Bin, _TrUserData) -> e_varint(V, Bin).
+'e_enum_generic_result_code.enum_generic_result_code'(ok, Bin, _TrUserData) ->
+    <<Bin/binary, 0>>;
+'e_enum_generic_result_code.enum_generic_result_code'(failed, Bin, _TrUserData) ->
+    <<Bin/binary, 1>>;
+'e_enum_generic_result_code.enum_generic_result_code'(not_found, Bin, _TrUserData) ->
+    <<Bin/binary, 2>>;
+'e_enum_generic_result_code.enum_generic_result_code'(invalid_parameter,
+                                                      Bin,
+                                                      _TrUserData) ->
+    <<Bin/binary, 3>>;
+'e_enum_generic_result_code.enum_generic_result_code'(unimplemented, Bin, _TrUserData) ->
+    <<Bin/binary, 4>>;
+'e_enum_generic_result_code.enum_generic_result_code'(deactivate_first,
+                                                      Bin,
+                                                      _TrUserData) ->
+    <<Bin/binary, 5>>;
+'e_enum_generic_result_code.enum_generic_result_code'(activate_first, Bin, _TrUserData) ->
+    <<Bin/binary, 6>>;
+'e_enum_generic_result_code.enum_generic_result_code'(entity_not_initialised,
+                                                      Bin,
+                                                      _TrUserData) ->
+    <<Bin/binary, 7>>;
+'e_enum_generic_result_code.enum_generic_result_code'(component_already_exists,
+                                                      Bin,
+                                                      _TrUserData) ->
+    <<Bin/binary, 8>>;
+'e_enum_generic_result_code.enum_generic_result_code'(V, Bin, _TrUserData) ->
+    e_varint(V, Bin).
 
--compile({nowarn_unused_function,e_type_sint/3}).
-e_type_sint(Value, Bin, _TrUserData) when Value >= 0 -> e_varint(Value * 2, Bin);
-e_type_sint(Value, Bin, _TrUserData) -> e_varint(Value * -2 - 1, Bin).
+-compile({nowarn_unused_function, e_type_sint/3}).
 
--compile({nowarn_unused_function,e_type_int32/3}).
-e_type_int32(Value, Bin, _TrUserData) when 0 =< Value, Value =< 127 -> <<Bin/binary, Value>>;
-e_type_int32(Value, Bin, _TrUserData) -> <<N:64/unsigned-native>> = <<Value:64/signed-native>>, e_varint(N, Bin).
+e_type_sint(Value, Bin, _TrUserData) when Value >= 0 ->
+    e_varint(Value * 2, Bin);
+e_type_sint(Value, Bin, _TrUserData) ->
+    e_varint(Value * -2 - 1, Bin).
 
--compile({nowarn_unused_function,e_type_int64/3}).
-e_type_int64(Value, Bin, _TrUserData) when 0 =< Value, Value =< 127 -> <<Bin/binary, Value>>;
-e_type_int64(Value, Bin, _TrUserData) -> <<N:64/unsigned-native>> = <<Value:64/signed-native>>, e_varint(N, Bin).
+-compile({nowarn_unused_function, e_type_int32/3}).
 
--compile({nowarn_unused_function,e_type_bool/3}).
-e_type_bool(true, Bin, _TrUserData) -> <<Bin/binary, 1>>;
-e_type_bool(false, Bin, _TrUserData) -> <<Bin/binary, 0>>;
-e_type_bool(1, Bin, _TrUserData) -> <<Bin/binary, 1>>;
-e_type_bool(0, Bin, _TrUserData) -> <<Bin/binary, 0>>.
+e_type_int32(Value, Bin, _TrUserData) when 0 =< Value, Value =< 127 ->
+    <<Bin/binary, Value>>;
+e_type_int32(Value, Bin, _TrUserData) ->
+    <<N:64/unsigned-native>> = <<Value:64/signed-native>>,
+    e_varint(N, Bin).
 
--compile({nowarn_unused_function,e_type_string/3}).
-e_type_string(S, Bin, _TrUserData) -> Utf8 = unicode:characters_to_binary(S), Bin2 = e_varint(byte_size(Utf8), Bin), <<Bin2/binary, Utf8/binary>>.
+-compile({nowarn_unused_function, e_type_int64/3}).
 
--compile({nowarn_unused_function,e_type_bytes/3}).
-e_type_bytes(Bytes, Bin, _TrUserData) when is_binary(Bytes) -> Bin2 = e_varint(byte_size(Bytes), Bin), <<Bin2/binary, Bytes/binary>>;
-e_type_bytes(Bytes, Bin, _TrUserData) when is_list(Bytes) -> BytesBin = iolist_to_binary(Bytes), Bin2 = e_varint(byte_size(BytesBin), Bin), <<Bin2/binary, BytesBin/binary>>.
+e_type_int64(Value, Bin, _TrUserData) when 0 =< Value, Value =< 127 ->
+    <<Bin/binary, Value>>;
+e_type_int64(Value, Bin, _TrUserData) ->
+    <<N:64/unsigned-native>> = <<Value:64/signed-native>>,
+    e_varint(N, Bin).
 
--compile({nowarn_unused_function,e_type_fixed32/3}).
-e_type_fixed32(Value, Bin, _TrUserData) -> <<Bin/binary, Value:32/little>>.
+-compile({nowarn_unused_function, e_type_bool/3}).
 
--compile({nowarn_unused_function,e_type_sfixed32/3}).
-e_type_sfixed32(Value, Bin, _TrUserData) -> <<Bin/binary, Value:32/little-signed>>.
+e_type_bool(true, Bin, _TrUserData) ->
+    <<Bin/binary, 1>>;
+e_type_bool(false, Bin, _TrUserData) ->
+    <<Bin/binary, 0>>;
+e_type_bool(1, Bin, _TrUserData) ->
+    <<Bin/binary, 1>>;
+e_type_bool(0, Bin, _TrUserData) ->
+    <<Bin/binary, 0>>.
 
--compile({nowarn_unused_function,e_type_fixed64/3}).
-e_type_fixed64(Value, Bin, _TrUserData) -> <<Bin/binary, Value:64/little>>.
+-compile({nowarn_unused_function, e_type_string/3}).
 
--compile({nowarn_unused_function,e_type_sfixed64/3}).
-e_type_sfixed64(Value, Bin, _TrUserData) -> <<Bin/binary, Value:64/little-signed>>.
+e_type_string(S, Bin, _TrUserData) ->
+    Utf8 = unicode:characters_to_binary(S),
+    Bin2 = e_varint(byte_size(Utf8), Bin),
+    <<Bin2/binary, Utf8/binary>>.
 
--compile({nowarn_unused_function,e_type_float/3}).
-e_type_float(V, Bin, _) when is_number(V) -> <<Bin/binary, V:32/little-float>>;
-e_type_float(infinity, Bin, _) -> <<Bin/binary, 0:16, 128, 127>>;
-e_type_float('-infinity', Bin, _) -> <<Bin/binary, 0:16, 128, 255>>;
-e_type_float(nan, Bin, _) -> <<Bin/binary, 0:16, 192, 127>>.
+-compile({nowarn_unused_function, e_type_bytes/3}).
 
--compile({nowarn_unused_function,e_type_double/3}).
-e_type_double(V, Bin, _) when is_number(V) -> <<Bin/binary, V:64/little-float>>;
-e_type_double(infinity, Bin, _) -> <<Bin/binary, 0:48, 240, 127>>;
-e_type_double('-infinity', Bin, _) -> <<Bin/binary, 0:48, 240, 255>>;
-e_type_double(nan, Bin, _) -> <<Bin/binary, 0:48, 248, 127>>.
+e_type_bytes(Bytes, Bin, _TrUserData) when is_binary(Bytes) ->
+    Bin2 = e_varint(byte_size(Bytes), Bin),
+    <<Bin2/binary, Bytes/binary>>;
+e_type_bytes(Bytes, Bin, _TrUserData) when is_list(Bytes) ->
+    BytesBin = iolist_to_binary(Bytes),
+    Bin2 = e_varint(byte_size(BytesBin), Bin),
+    <<Bin2/binary, BytesBin/binary>>.
 
--compile({nowarn_unused_function,e_varint/3}).
-e_varint(N, Bin, _TrUserData) -> e_varint(N, Bin).
+-compile({nowarn_unused_function, e_type_fixed32/3}).
 
--compile({nowarn_unused_function,e_varint/2}).
-e_varint(N, Bin) when N =< 127 -> <<Bin/binary, N>>;
-e_varint(N, Bin) -> Bin2 = <<Bin/binary, (N band 127 bor 128)>>, e_varint(N bsr 7, Bin2).
+e_type_fixed32(Value, Bin, _TrUserData) ->
+    <<Bin/binary, Value:32/little>>.
 
+-compile({nowarn_unused_function, e_type_sfixed32/3}).
 
-decode_msg(Bin, MsgName) when is_binary(Bin) -> decode_msg(Bin, MsgName, []).
+e_type_sfixed32(Value, Bin, _TrUserData) ->
+    <<Bin/binary, Value:32/little-signed>>.
 
-decode_msg(Bin, MsgName, Opts) when is_binary(Bin) -> TrUserData = proplists:get_value(user_data, Opts), decode_msg_1_catch(Bin, MsgName, TrUserData).
+-compile({nowarn_unused_function, e_type_fixed64/3}).
+
+e_type_fixed64(Value, Bin, _TrUserData) ->
+    <<Bin/binary, Value:64/little>>.
+
+-compile({nowarn_unused_function, e_type_sfixed64/3}).
+
+e_type_sfixed64(Value, Bin, _TrUserData) ->
+    <<Bin/binary, Value:64/little-signed>>.
+
+-compile({nowarn_unused_function, e_type_float/3}).
+
+e_type_float(V, Bin, _) when is_number(V) ->
+    <<Bin/binary, V:32/little-float>>;
+e_type_float(infinity, Bin, _) ->
+    <<Bin/binary, 0:16, 128, 127>>;
+e_type_float('-infinity', Bin, _) ->
+    <<Bin/binary, 0:16, 128, 255>>;
+e_type_float(nan, Bin, _) ->
+    <<Bin/binary, 0:16, 192, 127>>.
+
+-compile({nowarn_unused_function, e_type_double/3}).
+
+e_type_double(V, Bin, _) when is_number(V) ->
+    <<Bin/binary, V:64/little-float>>;
+e_type_double(infinity, Bin, _) ->
+    <<Bin/binary, 0:48, 240, 127>>;
+e_type_double('-infinity', Bin, _) ->
+    <<Bin/binary, 0:48, 240, 255>>;
+e_type_double(nan, Bin, _) ->
+    <<Bin/binary, 0:48, 248, 127>>.
+
+-compile({nowarn_unused_function, e_varint/3}).
+
+e_varint(N, Bin, _TrUserData) ->
+    e_varint(N, Bin).
+
+-compile({nowarn_unused_function, e_varint/2}).
+
+e_varint(N, Bin) when N =< 127 ->
+    <<Bin/binary, N>>;
+e_varint(N, Bin) ->
+    Bin2 = <<Bin/binary, (N band 127 bor 128)>>,
+    e_varint(N bsr 7, Bin2).
+
+decode_msg(Bin, MsgName) when is_binary(Bin) ->
+    decode_msg(Bin, MsgName, []).
+
+decode_msg(Bin, MsgName, Opts) when is_binary(Bin) ->
+    TrUserData = proplists:get_value(user_data, Opts),
+    decode_msg_1_catch(Bin, MsgName, TrUserData).
 
 -ifdef('OTP_RELEASE').
+
 decode_msg_1_catch(Bin, MsgName, TrUserData) ->
-    try decode_msg_2_doit(MsgName, Bin, TrUserData)
-    catch Class:Reason:StackTrace -> error({gpb_error,{decoding_failure, {Bin, MsgName, {Class, Reason, StackTrace}}}})
+    try
+        decode_msg_2_doit(MsgName, Bin, TrUserData)
+    catch
+        Class:Reason:StackTrace ->
+            error({gpb_error, {decoding_failure, {Bin, MsgName, {Class, Reason, StackTrace}}}})
     end.
+
 -else.
+
 decode_msg_1_catch(Bin, MsgName, TrUserData) ->
-    try decode_msg_2_doit(MsgName, Bin, TrUserData)
-    catch Class:Reason ->
-        StackTrace = erlang:get_stacktrace(),
-        error({gpb_error,{decoding_failure, {Bin, MsgName, {Class, Reason, StackTrace}}}})
+    try
+        decode_msg_2_doit(MsgName, Bin, TrUserData)
+    catch
+        Class:Reason ->
+            StackTrace = erlang:get_stacktrace(),
+            error({gpb_error, {decoding_failure, {Bin, MsgName, {Class, Reason, StackTrace}}}})
     end.
+
 -endif.
 
-decode_msg_2_doit(camera_component_parameters, Bin, TrUserData) -> id(decode_msg_camera_component_parameters(Bin, TrUserData), TrUserData);
-decode_msg_2_doit(m_entity_id, Bin, TrUserData) -> id(decode_msg_m_entity_id(Bin, TrUserData), TrUserData);
-decode_msg_2_doit(generic_result_code, Bin, TrUserData) -> id(decode_msg_generic_result_code(Bin, TrUserData), TrUserData);
-decode_msg_2_doit(vector_3, Bin, TrUserData) -> id(decode_msg_vector_3(Bin, TrUserData), TrUserData);
-decode_msg_2_doit(vector_4, Bin, TrUserData) -> id(decode_msg_vector_4(Bin, TrUserData), TrUserData).
+decode_msg_2_doit(camera_component_parameters, Bin, TrUserData) ->
+    id(decode_msg_camera_component_parameters(Bin, TrUserData), TrUserData);
+decode_msg_2_doit(m_entity_id, Bin, TrUserData) ->
+    id(decode_msg_m_entity_id(Bin, TrUserData), TrUserData);
+decode_msg_2_doit(generic_result_code, Bin, TrUserData) ->
+    id(decode_msg_generic_result_code(Bin, TrUserData), TrUserData);
+decode_msg_2_doit(vector_3, Bin, TrUserData) ->
+    id(decode_msg_vector_3(Bin, TrUserData), TrUserData);
+decode_msg_2_doit(vector_4, Bin, TrUserData) ->
+    id(decode_msg_vector_4(Bin, TrUserData), TrUserData).
 
+decode_msg_camera_component_parameters(Bin, TrUserData) ->
+    dfp_read_field_def_camera_component_parameters(Bin,
+                                                   0,
+                                                   0,
+                                                   id('$undef', TrUserData),
+                                                   TrUserData).
 
-
-decode_msg_camera_component_parameters(Bin, TrUserData) -> dfp_read_field_def_camera_component_parameters(Bin, 0, 0, id('$undef', TrUserData), TrUserData).
-
-dfp_read_field_def_camera_component_parameters(<<10, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> d_field_camera_component_parameters_entity_id(Rest, Z1, Z2, F@_1, TrUserData);
+dfp_read_field_def_camera_component_parameters(<<10, Rest/binary>>,
+                                               Z1,
+                                               Z2,
+                                               F@_1,
+                                               TrUserData) ->
+    d_field_camera_component_parameters_entity_id(Rest, Z1, Z2, F@_1, TrUserData);
 dfp_read_field_def_camera_component_parameters(<<>>, 0, 0, F@_1, _) ->
     S1 = #{},
-    if F@_1 == '$undef' -> S1;
-       true -> S1#{entity_id => F@_1}
+    if F@_1 == '$undef' ->
+           S1;
+       true ->
+           S1#{entity_id => F@_1}
     end;
-dfp_read_field_def_camera_component_parameters(Other, Z1, Z2, F@_1, TrUserData) -> dg_read_field_def_camera_component_parameters(Other, Z1, Z2, F@_1, TrUserData).
+dfp_read_field_def_camera_component_parameters(Other, Z1, Z2, F@_1, TrUserData) ->
+    dg_read_field_def_camera_component_parameters(Other, Z1, Z2, F@_1, TrUserData).
 
-dg_read_field_def_camera_component_parameters(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 32 - 7 -> dg_read_field_def_camera_component_parameters(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-dg_read_field_def_camera_component_parameters(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) ->
+dg_read_field_def_camera_component_parameters(<<1:1, X:7, Rest/binary>>,
+                                              N,
+                                              Acc,
+                                              F@_1,
+                                              TrUserData)
+    when N < 32 - 7 ->
+    dg_read_field_def_camera_component_parameters(Rest,
+                                                  N + 7,
+                                                  X bsl N + Acc,
+                                                  F@_1,
+                                                  TrUserData);
+dg_read_field_def_camera_component_parameters(<<0:1, X:7, Rest/binary>>,
+                                              N,
+                                              Acc,
+                                              F@_1,
+                                              TrUserData) ->
     Key = X bsl N + Acc,
     case Key of
-      10 -> d_field_camera_component_parameters_entity_id(Rest, 0, 0, F@_1, TrUserData);
-      _ ->
-	  case Key band 7 of
-	    0 -> skip_varint_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData);
-	    1 -> skip_64_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData);
-	    2 -> skip_length_delimited_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData);
-	    3 -> skip_group_camera_component_parameters(Rest, Key bsr 3, 0, F@_1, TrUserData);
-	    5 -> skip_32_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData)
-	  end
+        10 ->
+            d_field_camera_component_parameters_entity_id(Rest, 0, 0, F@_1, TrUserData);
+        _ ->
+            case Key band 7 of
+                0 ->
+                    skip_varint_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData);
+                1 ->
+                    skip_64_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData);
+                2 ->
+                    skip_length_delimited_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData);
+                3 ->
+                    skip_group_camera_component_parameters(Rest, Key bsr 3, 0, F@_1, TrUserData);
+                5 ->
+                    skip_32_camera_component_parameters(Rest, 0, 0, F@_1, TrUserData)
+            end
     end;
 dg_read_field_def_camera_component_parameters(<<>>, 0, 0, F@_1, _) ->
     S1 = #{},
-    if F@_1 == '$undef' -> S1;
-       true -> S1#{entity_id => F@_1}
+    if F@_1 == '$undef' ->
+           S1;
+       true ->
+           S1#{entity_id => F@_1}
     end.
 
-d_field_camera_component_parameters_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 57 -> d_field_camera_component_parameters_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-d_field_camera_component_parameters_entity_id(<<0:1, X:7, Rest/binary>>, N, Acc, Prev, TrUserData) ->
-    {NewFValue, RestF} = begin Len = X bsl N + Acc, <<Bs:Len/binary, Rest2/binary>> = Rest, {id(decode_msg_m_entity_id(Bs, TrUserData), TrUserData), Rest2} end,
-    dfp_read_field_def_camera_component_parameters(RestF, 0, 0,
-						   if Prev == '$undef' -> NewFValue;
-						      true -> merge_msg_m_entity_id(Prev, NewFValue, TrUserData)
-						   end,
-						   TrUserData).
+d_field_camera_component_parameters_entity_id(<<1:1, X:7, Rest/binary>>,
+                                              N,
+                                              Acc,
+                                              F@_1,
+                                              TrUserData)
+    when N < 57 ->
+    d_field_camera_component_parameters_entity_id(Rest,
+                                                  N + 7,
+                                                  X bsl N + Acc,
+                                                  F@_1,
+                                                  TrUserData);
+d_field_camera_component_parameters_entity_id(<<0:1, X:7, Rest/binary>>,
+                                              N,
+                                              Acc,
+                                              Prev,
+                                              TrUserData) ->
+    {NewFValue, RestF} =
+        begin
+            Len = X bsl N + Acc,
+            <<Bs:Len/binary, Rest2/binary>> = Rest,
+            {id(decode_msg_m_entity_id(Bs, TrUserData), TrUserData), Rest2}
+        end,
+    dfp_read_field_def_camera_component_parameters(RestF,
+                                                   0,
+                                                   0,
+                                                   if Prev == '$undef' ->
+                                                          NewFValue;
+                                                      true ->
+                                                          merge_msg_m_entity_id(Prev,
+                                                                                NewFValue,
+                                                                                TrUserData)
+                                                   end,
+                                                   TrUserData).
 
-skip_varint_camera_component_parameters(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> skip_varint_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData);
-skip_varint_camera_component_parameters(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData).
+skip_varint_camera_component_parameters(<<1:1, _:7, Rest/binary>>,
+                                        Z1,
+                                        Z2,
+                                        F@_1,
+                                        TrUserData) ->
+    skip_varint_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData);
+skip_varint_camera_component_parameters(<<0:1, _:7, Rest/binary>>,
+                                        Z1,
+                                        Z2,
+                                        F@_1,
+                                        TrUserData) ->
+    dfp_read_field_def_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData).
 
-skip_length_delimited_camera_component_parameters(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 57 -> skip_length_delimited_camera_component_parameters(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-skip_length_delimited_camera_component_parameters(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) -> Length = X bsl N + Acc, <<_:Length/binary, Rest2/binary>> = Rest, dfp_read_field_def_camera_component_parameters(Rest2, 0, 0, F@_1, TrUserData).
+skip_length_delimited_camera_component_parameters(<<1:1, X:7, Rest/binary>>,
+                                                  N,
+                                                  Acc,
+                                                  F@_1,
+                                                  TrUserData)
+    when N < 57 ->
+    skip_length_delimited_camera_component_parameters(Rest,
+                                                      N + 7,
+                                                      X bsl N + Acc,
+                                                      F@_1,
+                                                      TrUserData);
+skip_length_delimited_camera_component_parameters(<<0:1, X:7, Rest/binary>>,
+                                                  N,
+                                                  Acc,
+                                                  F@_1,
+                                                  TrUserData) ->
+    Length = X bsl N + Acc,
+    <<_:Length/binary, Rest2/binary>> = Rest,
+    dfp_read_field_def_camera_component_parameters(Rest2, 0, 0, F@_1, TrUserData).
 
-skip_group_camera_component_parameters(Bin, FNum, Z2, F@_1, TrUserData) -> {_, Rest} = read_group(Bin, FNum), dfp_read_field_def_camera_component_parameters(Rest, 0, Z2, F@_1, TrUserData).
+skip_group_camera_component_parameters(Bin, FNum, Z2, F@_1, TrUserData) ->
+    {_, Rest} = read_group(Bin, FNum),
+    dfp_read_field_def_camera_component_parameters(Rest, 0, Z2, F@_1, TrUserData).
 
-skip_32_camera_component_parameters(<<_:32, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData).
+skip_32_camera_component_parameters(<<_:32, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData).
 
-skip_64_camera_component_parameters(<<_:64, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData).
+skip_64_camera_component_parameters(<<_:64, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_camera_component_parameters(Rest, Z1, Z2, F@_1, TrUserData).
 
-decode_msg_m_entity_id(Bin, TrUserData) -> dfp_read_field_def_m_entity_id(Bin, 0, 0, id(0, TrUserData), TrUserData).
+decode_msg_m_entity_id(Bin, TrUserData) ->
+    dfp_read_field_def_m_entity_id(Bin, 0, 0, id(0, TrUserData), TrUserData).
 
-dfp_read_field_def_m_entity_id(<<8, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> d_field_m_entity_id_entity_id(Rest, Z1, Z2, F@_1, TrUserData);
-dfp_read_field_def_m_entity_id(<<>>, 0, 0, F@_1, _) -> #{entity_id => F@_1};
-dfp_read_field_def_m_entity_id(Other, Z1, Z2, F@_1, TrUserData) -> dg_read_field_def_m_entity_id(Other, Z1, Z2, F@_1, TrUserData).
+dfp_read_field_def_m_entity_id(<<8, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    d_field_m_entity_id_entity_id(Rest, Z1, Z2, F@_1, TrUserData);
+dfp_read_field_def_m_entity_id(<<>>, 0, 0, F@_1, _) ->
+    #{entity_id => F@_1};
+dfp_read_field_def_m_entity_id(Other, Z1, Z2, F@_1, TrUserData) ->
+    dg_read_field_def_m_entity_id(Other, Z1, Z2, F@_1, TrUserData).
 
-dg_read_field_def_m_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 32 - 7 -> dg_read_field_def_m_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
+dg_read_field_def_m_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData)
+    when N < 32 - 7 ->
+    dg_read_field_def_m_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
 dg_read_field_def_m_entity_id(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) ->
     Key = X bsl N + Acc,
     case Key of
-      8 -> d_field_m_entity_id_entity_id(Rest, 0, 0, F@_1, TrUserData);
-      _ ->
-	  case Key band 7 of
-	    0 -> skip_varint_m_entity_id(Rest, 0, 0, F@_1, TrUserData);
-	    1 -> skip_64_m_entity_id(Rest, 0, 0, F@_1, TrUserData);
-	    2 -> skip_length_delimited_m_entity_id(Rest, 0, 0, F@_1, TrUserData);
-	    3 -> skip_group_m_entity_id(Rest, Key bsr 3, 0, F@_1, TrUserData);
-	    5 -> skip_32_m_entity_id(Rest, 0, 0, F@_1, TrUserData)
-	  end
+        8 ->
+            d_field_m_entity_id_entity_id(Rest, 0, 0, F@_1, TrUserData);
+        _ ->
+            case Key band 7 of
+                0 ->
+                    skip_varint_m_entity_id(Rest, 0, 0, F@_1, TrUserData);
+                1 ->
+                    skip_64_m_entity_id(Rest, 0, 0, F@_1, TrUserData);
+                2 ->
+                    skip_length_delimited_m_entity_id(Rest, 0, 0, F@_1, TrUserData);
+                3 ->
+                    skip_group_m_entity_id(Rest, Key bsr 3, 0, F@_1, TrUserData);
+                5 ->
+                    skip_32_m_entity_id(Rest, 0, 0, F@_1, TrUserData)
+            end
     end;
-dg_read_field_def_m_entity_id(<<>>, 0, 0, F@_1, _) -> #{entity_id => F@_1}.
+dg_read_field_def_m_entity_id(<<>>, 0, 0, F@_1, _) ->
+    #{entity_id => F@_1}.
 
-d_field_m_entity_id_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 57 -> d_field_m_entity_id_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-d_field_m_entity_id_entity_id(<<0:1, X:7, Rest/binary>>, N, Acc, _, TrUserData) -> {NewFValue, RestF} = {id(X bsl N + Acc, TrUserData), Rest}, dfp_read_field_def_m_entity_id(RestF, 0, 0, NewFValue, TrUserData).
+d_field_m_entity_id_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData)
+    when N < 57 ->
+    d_field_m_entity_id_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
+d_field_m_entity_id_entity_id(<<0:1, X:7, Rest/binary>>, N, Acc, _, TrUserData) ->
+    {NewFValue, RestF} = {id(X bsl N + Acc, TrUserData), Rest},
+    dfp_read_field_def_m_entity_id(RestF, 0, 0, NewFValue, TrUserData).
 
-skip_varint_m_entity_id(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> skip_varint_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData);
-skip_varint_m_entity_id(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData).
+skip_varint_m_entity_id(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    skip_varint_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData);
+skip_varint_m_entity_id(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData).
 
-skip_length_delimited_m_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 57 -> skip_length_delimited_m_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-skip_length_delimited_m_entity_id(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) -> Length = X bsl N + Acc, <<_:Length/binary, Rest2/binary>> = Rest, dfp_read_field_def_m_entity_id(Rest2, 0, 0, F@_1, TrUserData).
+skip_length_delimited_m_entity_id(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData)
+    when N < 57 ->
+    skip_length_delimited_m_entity_id(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
+skip_length_delimited_m_entity_id(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) ->
+    Length = X bsl N + Acc,
+    <<_:Length/binary, Rest2/binary>> = Rest,
+    dfp_read_field_def_m_entity_id(Rest2, 0, 0, F@_1, TrUserData).
 
-skip_group_m_entity_id(Bin, FNum, Z2, F@_1, TrUserData) -> {_, Rest} = read_group(Bin, FNum), dfp_read_field_def_m_entity_id(Rest, 0, Z2, F@_1, TrUserData).
+skip_group_m_entity_id(Bin, FNum, Z2, F@_1, TrUserData) ->
+    {_, Rest} = read_group(Bin, FNum),
+    dfp_read_field_def_m_entity_id(Rest, 0, Z2, F@_1, TrUserData).
 
-skip_32_m_entity_id(<<_:32, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData).
+skip_32_m_entity_id(<<_:32, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData).
 
-skip_64_m_entity_id(<<_:64, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData).
+skip_64_m_entity_id(<<_:64, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_m_entity_id(Rest, Z1, Z2, F@_1, TrUserData).
 
-decode_msg_generic_result_code(Bin, TrUserData) -> dfp_read_field_def_generic_result_code(Bin, 0, 0, id(ok, TrUserData), TrUserData).
+decode_msg_generic_result_code(Bin, TrUserData) ->
+    dfp_read_field_def_generic_result_code(Bin, 0, 0, id(ok, TrUserData), TrUserData).
 
-dfp_read_field_def_generic_result_code(<<8, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> d_field_generic_result_code_result_code(Rest, Z1, Z2, F@_1, TrUserData);
-dfp_read_field_def_generic_result_code(<<>>, 0, 0, F@_1, _) -> #{result_code => F@_1};
-dfp_read_field_def_generic_result_code(Other, Z1, Z2, F@_1, TrUserData) -> dg_read_field_def_generic_result_code(Other, Z1, Z2, F@_1, TrUserData).
+dfp_read_field_def_generic_result_code(<<8, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    d_field_generic_result_code_result_code(Rest, Z1, Z2, F@_1, TrUserData);
+dfp_read_field_def_generic_result_code(<<>>, 0, 0, F@_1, _) ->
+    #{result_code => F@_1};
+dfp_read_field_def_generic_result_code(Other, Z1, Z2, F@_1, TrUserData) ->
+    dg_read_field_def_generic_result_code(Other, Z1, Z2, F@_1, TrUserData).
 
-dg_read_field_def_generic_result_code(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 32 - 7 -> dg_read_field_def_generic_result_code(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-dg_read_field_def_generic_result_code(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) ->
+dg_read_field_def_generic_result_code(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData)
+    when N < 32 - 7 ->
+    dg_read_field_def_generic_result_code(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
+dg_read_field_def_generic_result_code(<<0:1, X:7, Rest/binary>>,
+                                      N,
+                                      Acc,
+                                      F@_1,
+                                      TrUserData) ->
     Key = X bsl N + Acc,
     case Key of
-      8 -> d_field_generic_result_code_result_code(Rest, 0, 0, F@_1, TrUserData);
-      _ ->
-	  case Key band 7 of
-	    0 -> skip_varint_generic_result_code(Rest, 0, 0, F@_1, TrUserData);
-	    1 -> skip_64_generic_result_code(Rest, 0, 0, F@_1, TrUserData);
-	    2 -> skip_length_delimited_generic_result_code(Rest, 0, 0, F@_1, TrUserData);
-	    3 -> skip_group_generic_result_code(Rest, Key bsr 3, 0, F@_1, TrUserData);
-	    5 -> skip_32_generic_result_code(Rest, 0, 0, F@_1, TrUserData)
-	  end
+        8 ->
+            d_field_generic_result_code_result_code(Rest, 0, 0, F@_1, TrUserData);
+        _ ->
+            case Key band 7 of
+                0 ->
+                    skip_varint_generic_result_code(Rest, 0, 0, F@_1, TrUserData);
+                1 ->
+                    skip_64_generic_result_code(Rest, 0, 0, F@_1, TrUserData);
+                2 ->
+                    skip_length_delimited_generic_result_code(Rest, 0, 0, F@_1, TrUserData);
+                3 ->
+                    skip_group_generic_result_code(Rest, Key bsr 3, 0, F@_1, TrUserData);
+                5 ->
+                    skip_32_generic_result_code(Rest, 0, 0, F@_1, TrUserData)
+            end
     end;
-dg_read_field_def_generic_result_code(<<>>, 0, 0, F@_1, _) -> #{result_code => F@_1}.
+dg_read_field_def_generic_result_code(<<>>, 0, 0, F@_1, _) ->
+    #{result_code => F@_1}.
 
-d_field_generic_result_code_result_code(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 57 -> d_field_generic_result_code_result_code(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-d_field_generic_result_code_result_code(<<0:1, X:7, Rest/binary>>, N, Acc, _, TrUserData) ->
-    {NewFValue, RestF} = {id('d_enum_generic_result_code.enum_generic_result_code'(begin <<Res:32/signed-native>> = <<(X bsl N + Acc):32/unsigned-native>>, id(Res, TrUserData) end), TrUserData), Rest},
+d_field_generic_result_code_result_code(<<1:1, X:7, Rest/binary>>,
+                                        N,
+                                        Acc,
+                                        F@_1,
+                                        TrUserData)
+    when N < 57 ->
+    d_field_generic_result_code_result_code(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
+d_field_generic_result_code_result_code(<<0:1, X:7, Rest/binary>>,
+                                        N,
+                                        Acc,
+                                        _,
+                                        TrUserData) ->
+    {NewFValue, RestF} =
+        {id('d_enum_generic_result_code.enum_generic_result_code'(begin
+                                                                      <<Res:32/signed-native>> =
+                                                                          <<(X bsl N
+                                                                             + Acc):32/unsigned-native>>,
+                                                                      id(Res, TrUserData)
+                                                                  end),
+            TrUserData),
+         Rest},
     dfp_read_field_def_generic_result_code(RestF, 0, 0, NewFValue, TrUserData).
 
-skip_varint_generic_result_code(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> skip_varint_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData);
-skip_varint_generic_result_code(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData).
+skip_varint_generic_result_code(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    skip_varint_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData);
+skip_varint_generic_result_code(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData).
 
-skip_length_delimited_generic_result_code(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) when N < 57 -> skip_length_delimited_generic_result_code(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
-skip_length_delimited_generic_result_code(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, TrUserData) -> Length = X bsl N + Acc, <<_:Length/binary, Rest2/binary>> = Rest, dfp_read_field_def_generic_result_code(Rest2, 0, 0, F@_1, TrUserData).
+skip_length_delimited_generic_result_code(<<1:1, X:7, Rest/binary>>,
+                                          N,
+                                          Acc,
+                                          F@_1,
+                                          TrUserData)
+    when N < 57 ->
+    skip_length_delimited_generic_result_code(Rest, N + 7, X bsl N + Acc, F@_1, TrUserData);
+skip_length_delimited_generic_result_code(<<0:1, X:7, Rest/binary>>,
+                                          N,
+                                          Acc,
+                                          F@_1,
+                                          TrUserData) ->
+    Length = X bsl N + Acc,
+    <<_:Length/binary, Rest2/binary>> = Rest,
+    dfp_read_field_def_generic_result_code(Rest2, 0, 0, F@_1, TrUserData).
 
-skip_group_generic_result_code(Bin, FNum, Z2, F@_1, TrUserData) -> {_, Rest} = read_group(Bin, FNum), dfp_read_field_def_generic_result_code(Rest, 0, Z2, F@_1, TrUserData).
+skip_group_generic_result_code(Bin, FNum, Z2, F@_1, TrUserData) ->
+    {_, Rest} = read_group(Bin, FNum),
+    dfp_read_field_def_generic_result_code(Rest, 0, Z2, F@_1, TrUserData).
 
-skip_32_generic_result_code(<<_:32, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData).
+skip_32_generic_result_code(<<_:32, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData).
 
-skip_64_generic_result_code(<<_:64, Rest/binary>>, Z1, Z2, F@_1, TrUserData) -> dfp_read_field_def_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData).
+skip_64_generic_result_code(<<_:64, Rest/binary>>, Z1, Z2, F@_1, TrUserData) ->
+    dfp_read_field_def_generic_result_code(Rest, Z1, Z2, F@_1, TrUserData).
 
-decode_msg_vector_3(Bin, TrUserData) -> dfp_read_field_def_vector_3(Bin, 0, 0, id(0.0, TrUserData), id(0.0, TrUserData), id(0.0, TrUserData), TrUserData).
+decode_msg_vector_3(Bin, TrUserData) ->
+    dfp_read_field_def_vector_3(Bin,
+                                0,
+                                0,
+                                id(0.0, TrUserData),
+                                id(0.0, TrUserData),
+                                id(0.0, TrUserData),
+                                TrUserData).
 
-dfp_read_field_def_vector_3(<<13, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> d_field_vector_3_x(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
-dfp_read_field_def_vector_3(<<21, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> d_field_vector_3_y(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
-dfp_read_field_def_vector_3(<<29, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> d_field_vector_3_z(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
-dfp_read_field_def_vector_3(<<>>, 0, 0, F@_1, F@_2, F@_3, _) -> #{x => F@_1, y => F@_2, z => F@_3};
-dfp_read_field_def_vector_3(Other, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> dg_read_field_def_vector_3(Other, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
+dfp_read_field_def_vector_3(<<13, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    d_field_vector_3_x(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
+dfp_read_field_def_vector_3(<<21, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    d_field_vector_3_y(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
+dfp_read_field_def_vector_3(<<29, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    d_field_vector_3_z(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
+dfp_read_field_def_vector_3(<<>>, 0, 0, F@_1, F@_2, F@_3, _) ->
+    #{x => F@_1,
+      y => F@_2,
+      z => F@_3};
+dfp_read_field_def_vector_3(Other, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    dg_read_field_def_vector_3(Other, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
 
-dg_read_field_def_vector_3(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, TrUserData) when N < 32 - 7 -> dg_read_field_def_vector_3(Rest, N + 7, X bsl N + Acc, F@_1, F@_2, F@_3, TrUserData);
-dg_read_field_def_vector_3(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, TrUserData) ->
+dg_read_field_def_vector_3(<<1:1, X:7, Rest/binary>>,
+                           N,
+                           Acc,
+                           F@_1,
+                           F@_2,
+                           F@_3,
+                           TrUserData)
+    when N < 32 - 7 ->
+    dg_read_field_def_vector_3(Rest, N + 7, X bsl N + Acc, F@_1, F@_2, F@_3, TrUserData);
+dg_read_field_def_vector_3(<<0:1, X:7, Rest/binary>>,
+                           N,
+                           Acc,
+                           F@_1,
+                           F@_2,
+                           F@_3,
+                           TrUserData) ->
     Key = X bsl N + Acc,
     case Key of
-      13 -> d_field_vector_3_x(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-      21 -> d_field_vector_3_y(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-      29 -> d_field_vector_3_z(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-      _ ->
-	  case Key band 7 of
-	    0 -> skip_varint_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-	    1 -> skip_64_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-	    2 -> skip_length_delimited_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
-	    3 -> skip_group_vector_3(Rest, Key bsr 3, 0, F@_1, F@_2, F@_3, TrUserData);
-	    5 -> skip_32_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData)
-	  end
+        13 ->
+            d_field_vector_3_x(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+        21 ->
+            d_field_vector_3_y(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+        29 ->
+            d_field_vector_3_z(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+        _ ->
+            case Key band 7 of
+                0 ->
+                    skip_varint_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+                1 ->
+                    skip_64_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+                2 ->
+                    skip_length_delimited_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData);
+                3 ->
+                    skip_group_vector_3(Rest, Key bsr 3, 0, F@_1, F@_2, F@_3, TrUserData);
+                5 ->
+                    skip_32_vector_3(Rest, 0, 0, F@_1, F@_2, F@_3, TrUserData)
+            end
     end;
-dg_read_field_def_vector_3(<<>>, 0, 0, F@_1, F@_2, F@_3, _) -> #{x => F@_1, y => F@_2, z => F@_3}.
+dg_read_field_def_vector_3(<<>>, 0, 0, F@_1, F@_2, F@_3, _) ->
+    #{x => F@_1,
+      y => F@_2,
+      z => F@_3}.
 
-d_field_vector_3_x(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, id(infinity, TrUserData), F@_2, F@_3, TrUserData);
-d_field_vector_3_x(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, id('-infinity', TrUserData), F@_2, F@_3, TrUserData);
-d_field_vector_3_x(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, id(nan, TrUserData), F@_2, F@_3, TrUserData);
-d_field_vector_3_x(<<Value:32/little-float, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, id(Value, TrUserData), F@_2, F@_3, TrUserData).
+d_field_vector_3_x(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest,
+                                Z1,
+                                Z2,
+                                id(infinity, TrUserData),
+                                F@_2,
+                                F@_3,
+                                TrUserData);
+d_field_vector_3_x(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest,
+                                Z1,
+                                Z2,
+                                id('-infinity', TrUserData),
+                                F@_2,
+                                F@_3,
+                                TrUserData);
+d_field_vector_3_x(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   _,
+                   F@_2,
+                   F@_3,
+                   TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, id(nan, TrUserData), F@_2, F@_3, TrUserData);
+d_field_vector_3_x(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   _,
+                   F@_2,
+                   F@_3,
+                   TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, id(Value, TrUserData), F@_2, F@_3, TrUserData).
 
-d_field_vector_3_y(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, id(infinity, TrUserData), F@_3, TrUserData);
-d_field_vector_3_y(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, id('-infinity', TrUserData), F@_3, TrUserData);
-d_field_vector_3_y(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, id(nan, TrUserData), F@_3, TrUserData);
-d_field_vector_3_y(<<Value:32/little-float, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, id(Value, TrUserData), F@_3, TrUserData).
+d_field_vector_3_y(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                id(infinity, TrUserData),
+                                F@_3,
+                                TrUserData);
+d_field_vector_3_y(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                id('-infinity', TrUserData),
+                                F@_3,
+                                TrUserData);
+d_field_vector_3_y(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   _,
+                   F@_3,
+                   TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, id(nan, TrUserData), F@_3, TrUserData);
+d_field_vector_3_y(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   _,
+                   F@_3,
+                   TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, id(Value, TrUserData), F@_3, TrUserData).
 
-d_field_vector_3_z(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, id(infinity, TrUserData), TrUserData);
-d_field_vector_3_z(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, id('-infinity', TrUserData), TrUserData);
-d_field_vector_3_z(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, id(nan, TrUserData), TrUserData);
-d_field_vector_3_z(<<Value:32/little-float, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, id(Value, TrUserData), TrUserData).
+d_field_vector_3_z(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                id(infinity, TrUserData),
+                                TrUserData);
+d_field_vector_3_z(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                id('-infinity', TrUserData),
+                                TrUserData);
+d_field_vector_3_z(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   _,
+                   TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, id(nan, TrUserData), TrUserData);
+d_field_vector_3_z(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   _,
+                   TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, id(Value, TrUserData), TrUserData).
 
-skip_varint_vector_3(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> skip_varint_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
-skip_varint_vector_3(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
+skip_varint_vector_3(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    skip_varint_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData);
+skip_varint_vector_3(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
 
-skip_length_delimited_vector_3(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, TrUserData) when N < 57 -> skip_length_delimited_vector_3(Rest, N + 7, X bsl N + Acc, F@_1, F@_2, F@_3, TrUserData);
-skip_length_delimited_vector_3(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, TrUserData) -> Length = X bsl N + Acc, <<_:Length/binary, Rest2/binary>> = Rest, dfp_read_field_def_vector_3(Rest2, 0, 0, F@_1, F@_2, F@_3, TrUserData).
+skip_length_delimited_vector_3(<<1:1, X:7, Rest/binary>>,
+                               N,
+                               Acc,
+                               F@_1,
+                               F@_2,
+                               F@_3,
+                               TrUserData)
+    when N < 57 ->
+    skip_length_delimited_vector_3(Rest, N + 7, X bsl N + Acc, F@_1, F@_2, F@_3, TrUserData);
+skip_length_delimited_vector_3(<<0:1, X:7, Rest/binary>>,
+                               N,
+                               Acc,
+                               F@_1,
+                               F@_2,
+                               F@_3,
+                               TrUserData) ->
+    Length = X bsl N + Acc,
+    <<_:Length/binary, Rest2/binary>> = Rest,
+    dfp_read_field_def_vector_3(Rest2, 0, 0, F@_1, F@_2, F@_3, TrUserData).
 
-skip_group_vector_3(Bin, FNum, Z2, F@_1, F@_2, F@_3, TrUserData) -> {_, Rest} = read_group(Bin, FNum), dfp_read_field_def_vector_3(Rest, 0, Z2, F@_1, F@_2, F@_3, TrUserData).
+skip_group_vector_3(Bin, FNum, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    {_, Rest} = read_group(Bin, FNum),
+    dfp_read_field_def_vector_3(Rest, 0, Z2, F@_1, F@_2, F@_3, TrUserData).
 
-skip_32_vector_3(<<_:32, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
+skip_32_vector_3(<<_:32, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
 
-skip_64_vector_3(<<_:64, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) -> dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
+skip_64_vector_3(<<_:64, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, TrUserData) ->
+    dfp_read_field_def_vector_3(Rest, Z1, Z2, F@_1, F@_2, F@_3, TrUserData).
 
-decode_msg_vector_4(Bin, TrUserData) -> dfp_read_field_def_vector_4(Bin, 0, 0, id(0.0, TrUserData), id(0.0, TrUserData), id(0.0, TrUserData), id(0.0, TrUserData), TrUserData).
+decode_msg_vector_4(Bin, TrUserData) ->
+    dfp_read_field_def_vector_4(Bin,
+                                0,
+                                0,
+                                id(0.0, TrUserData),
+                                id(0.0, TrUserData),
+                                id(0.0, TrUserData),
+                                id(0.0, TrUserData),
+                                TrUserData).
 
-dfp_read_field_def_vector_4(<<13, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> d_field_vector_4_w(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
-dfp_read_field_def_vector_4(<<21, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> d_field_vector_4_x(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
-dfp_read_field_def_vector_4(<<29, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> d_field_vector_4_y(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
-dfp_read_field_def_vector_4(<<37, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> d_field_vector_4_z(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
-dfp_read_field_def_vector_4(<<>>, 0, 0, F@_1, F@_2, F@_3, F@_4, _) -> #{w => F@_1, x => F@_2, y => F@_3, z => F@_4};
-dfp_read_field_def_vector_4(Other, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> dg_read_field_def_vector_4(Other, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
+dfp_read_field_def_vector_4(<<13, Rest/binary>>,
+                            Z1,
+                            Z2,
+                            F@_1,
+                            F@_2,
+                            F@_3,
+                            F@_4,
+                            TrUserData) ->
+    d_field_vector_4_w(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
+dfp_read_field_def_vector_4(<<21, Rest/binary>>,
+                            Z1,
+                            Z2,
+                            F@_1,
+                            F@_2,
+                            F@_3,
+                            F@_4,
+                            TrUserData) ->
+    d_field_vector_4_x(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
+dfp_read_field_def_vector_4(<<29, Rest/binary>>,
+                            Z1,
+                            Z2,
+                            F@_1,
+                            F@_2,
+                            F@_3,
+                            F@_4,
+                            TrUserData) ->
+    d_field_vector_4_y(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
+dfp_read_field_def_vector_4(<<37, Rest/binary>>,
+                            Z1,
+                            Z2,
+                            F@_1,
+                            F@_2,
+                            F@_3,
+                            F@_4,
+                            TrUserData) ->
+    d_field_vector_4_z(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
+dfp_read_field_def_vector_4(<<>>, 0, 0, F@_1, F@_2, F@_3, F@_4, _) ->
+    #{w => F@_1,
+      x => F@_2,
+      y => F@_3,
+      z => F@_4};
+dfp_read_field_def_vector_4(Other, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) ->
+    dg_read_field_def_vector_4(Other, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
 
-dg_read_field_def_vector_4(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, F@_4, TrUserData) when N < 32 - 7 -> dg_read_field_def_vector_4(Rest, N + 7, X bsl N + Acc, F@_1, F@_2, F@_3, F@_4, TrUserData);
-dg_read_field_def_vector_4(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, F@_4, TrUserData) ->
+dg_read_field_def_vector_4(<<1:1, X:7, Rest/binary>>,
+                           N,
+                           Acc,
+                           F@_1,
+                           F@_2,
+                           F@_3,
+                           F@_4,
+                           TrUserData)
+    when N < 32 - 7 ->
+    dg_read_field_def_vector_4(Rest,
+                               N + 7,
+                               X bsl N + Acc,
+                               F@_1,
+                               F@_2,
+                               F@_3,
+                               F@_4,
+                               TrUserData);
+dg_read_field_def_vector_4(<<0:1, X:7, Rest/binary>>,
+                           N,
+                           Acc,
+                           F@_1,
+                           F@_2,
+                           F@_3,
+                           F@_4,
+                           TrUserData) ->
     Key = X bsl N + Acc,
     case Key of
-      13 -> d_field_vector_4_w(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-      21 -> d_field_vector_4_x(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-      29 -> d_field_vector_4_y(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-      37 -> d_field_vector_4_z(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-      _ ->
-	  case Key band 7 of
-	    0 -> skip_varint_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-	    1 -> skip_64_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-	    2 -> skip_length_delimited_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-	    3 -> skip_group_vector_4(Rest, Key bsr 3, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
-	    5 -> skip_32_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData)
-	  end
+        13 ->
+            d_field_vector_4_w(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+        21 ->
+            d_field_vector_4_x(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+        29 ->
+            d_field_vector_4_y(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+        37 ->
+            d_field_vector_4_z(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+        _ ->
+            case Key band 7 of
+                0 ->
+                    skip_varint_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+                1 ->
+                    skip_64_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+                2 ->
+                    skip_length_delimited_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+                3 ->
+                    skip_group_vector_4(Rest, Key bsr 3, 0, F@_1, F@_2, F@_3, F@_4, TrUserData);
+                5 ->
+                    skip_32_vector_4(Rest, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData)
+            end
     end;
-dg_read_field_def_vector_4(<<>>, 0, 0, F@_1, F@_2, F@_3, F@_4, _) -> #{w => F@_1, x => F@_2, y => F@_3, z => F@_4}.
+dg_read_field_def_vector_4(<<>>, 0, 0, F@_1, F@_2, F@_3, F@_4, _) ->
+    #{w => F@_1,
+      x => F@_2,
+      y => F@_3,
+      z => F@_4}.
 
-d_field_vector_4_w(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, id(infinity, TrUserData), F@_2, F@_3, F@_4, TrUserData);
-d_field_vector_4_w(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, id('-infinity', TrUserData), F@_2, F@_3, F@_4, TrUserData);
-d_field_vector_4_w(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, id(nan, TrUserData), F@_2, F@_3, F@_4, TrUserData);
-d_field_vector_4_w(<<Value:32/little-float, Rest/binary>>, Z1, Z2, _, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, id(Value, TrUserData), F@_2, F@_3, F@_4, TrUserData).
+d_field_vector_4_w(<<0:16, 128, 127, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   _,
+                   F@_2,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                id(infinity, TrUserData),
+                                F@_2,
+                                F@_3,
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_w(<<0:16, 128, 255, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   _,
+                   F@_2,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                id('-infinity', TrUserData),
+                                F@_2,
+                                F@_3,
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_w(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   _,
+                   F@_2,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                id(nan, TrUserData),
+                                F@_2,
+                                F@_3,
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_w(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   _,
+                   F@_2,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                id(Value, TrUserData),
+                                F@_2,
+                                F@_3,
+                                F@_4,
+                                TrUserData).
 
-d_field_vector_4_x(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, id(infinity, TrUserData), F@_3, F@_4, TrUserData);
-d_field_vector_4_x(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, id('-infinity', TrUserData), F@_3, F@_4, TrUserData);
-d_field_vector_4_x(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, id(nan, TrUserData), F@_3, F@_4, TrUserData);
-d_field_vector_4_x(<<Value:32/little-float, Rest/binary>>, Z1, Z2, F@_1, _, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, id(Value, TrUserData), F@_3, F@_4, TrUserData).
+d_field_vector_4_x(<<0:16, 128, 127, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   _,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                id(infinity, TrUserData),
+                                F@_3,
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_x(<<0:16, 128, 255, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   _,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                id('-infinity', TrUserData),
+                                F@_3,
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_x(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   _,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                id(nan, TrUserData),
+                                F@_3,
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_x(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   _,
+                   F@_3,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                id(Value, TrUserData),
+                                F@_3,
+                                F@_4,
+                                TrUserData).
 
-d_field_vector_4_y(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, id(infinity, TrUserData), F@_4, TrUserData);
-d_field_vector_4_y(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, id('-infinity', TrUserData), F@_4, TrUserData);
-d_field_vector_4_y(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, id(nan, TrUserData), F@_4, TrUserData);
-d_field_vector_4_y(<<Value:32/little-float, Rest/binary>>, Z1, Z2, F@_1, F@_2, _, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, id(Value, TrUserData), F@_4, TrUserData).
+d_field_vector_4_y(<<0:16, 128, 127, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   _,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                id(infinity, TrUserData),
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_y(<<0:16, 128, 255, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   _,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                id('-infinity', TrUserData),
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_y(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   _,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                id(nan, TrUserData),
+                                F@_4,
+                                TrUserData);
+d_field_vector_4_y(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   _,
+                   F@_4,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                id(Value, TrUserData),
+                                F@_4,
+                                TrUserData).
 
-d_field_vector_4_z(<<0:16, 128, 127, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, _, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, id(infinity, TrUserData), TrUserData);
-d_field_vector_4_z(<<0:16, 128, 255, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, _, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, id('-infinity', TrUserData), TrUserData);
-d_field_vector_4_z(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, _, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, id(nan, TrUserData), TrUserData);
-d_field_vector_4_z(<<Value:32/little-float, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, _, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, id(Value, TrUserData), TrUserData).
+d_field_vector_4_z(<<0:16, 128, 127, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   F@_3,
+                   _,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                F@_3,
+                                id(infinity, TrUserData),
+                                TrUserData);
+d_field_vector_4_z(<<0:16, 128, 255, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   F@_3,
+                   _,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                F@_3,
+                                id('-infinity', TrUserData),
+                                TrUserData);
+d_field_vector_4_z(<<_:16, 1:1, _:7, _:1, 127:7, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   F@_3,
+                   _,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                F@_3,
+                                id(nan, TrUserData),
+                                TrUserData);
+d_field_vector_4_z(<<Value:32/little-float, Rest/binary>>,
+                   Z1,
+                   Z2,
+                   F@_1,
+                   F@_2,
+                   F@_3,
+                   _,
+                   TrUserData) ->
+    dfp_read_field_def_vector_4(Rest,
+                                Z1,
+                                Z2,
+                                F@_1,
+                                F@_2,
+                                F@_3,
+                                id(Value, TrUserData),
+                                TrUserData).
 
-skip_varint_vector_4(<<1:1, _:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> skip_varint_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
-skip_varint_vector_4(<<0:1, _:7, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
+skip_varint_vector_4(<<1:1, _:7, Rest/binary>>,
+                     Z1,
+                     Z2,
+                     F@_1,
+                     F@_2,
+                     F@_3,
+                     F@_4,
+                     TrUserData) ->
+    skip_varint_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData);
+skip_varint_vector_4(<<0:1, _:7, Rest/binary>>,
+                     Z1,
+                     Z2,
+                     F@_1,
+                     F@_2,
+                     F@_3,
+                     F@_4,
+                     TrUserData) ->
+    dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
 
-skip_length_delimited_vector_4(<<1:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, F@_4, TrUserData) when N < 57 -> skip_length_delimited_vector_4(Rest, N + 7, X bsl N + Acc, F@_1, F@_2, F@_3, F@_4, TrUserData);
-skip_length_delimited_vector_4(<<0:1, X:7, Rest/binary>>, N, Acc, F@_1, F@_2, F@_3, F@_4, TrUserData) -> Length = X bsl N + Acc, <<_:Length/binary, Rest2/binary>> = Rest, dfp_read_field_def_vector_4(Rest2, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData).
+skip_length_delimited_vector_4(<<1:1, X:7, Rest/binary>>,
+                               N,
+                               Acc,
+                               F@_1,
+                               F@_2,
+                               F@_3,
+                               F@_4,
+                               TrUserData)
+    when N < 57 ->
+    skip_length_delimited_vector_4(Rest,
+                                   N + 7,
+                                   X bsl N + Acc,
+                                   F@_1,
+                                   F@_2,
+                                   F@_3,
+                                   F@_4,
+                                   TrUserData);
+skip_length_delimited_vector_4(<<0:1, X:7, Rest/binary>>,
+                               N,
+                               Acc,
+                               F@_1,
+                               F@_2,
+                               F@_3,
+                               F@_4,
+                               TrUserData) ->
+    Length = X bsl N + Acc,
+    <<_:Length/binary, Rest2/binary>> = Rest,
+    dfp_read_field_def_vector_4(Rest2, 0, 0, F@_1, F@_2, F@_3, F@_4, TrUserData).
 
-skip_group_vector_4(Bin, FNum, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> {_, Rest} = read_group(Bin, FNum), dfp_read_field_def_vector_4(Rest, 0, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
+skip_group_vector_4(Bin, FNum, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) ->
+    {_, Rest} = read_group(Bin, FNum),
+    dfp_read_field_def_vector_4(Rest, 0, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
 
-skip_32_vector_4(<<_:32, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
+skip_32_vector_4(<<_:32, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) ->
+    dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
 
-skip_64_vector_4(<<_:64, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) -> dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
+skip_64_vector_4(<<_:64, Rest/binary>>, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData) ->
+    dfp_read_field_def_vector_4(Rest, Z1, Z2, F@_1, F@_2, F@_3, F@_4, TrUserData).
 
-'d_enum_generic_result_code.enum_generic_result_code'(0) -> ok;
-'d_enum_generic_result_code.enum_generic_result_code'(1) -> failed;
-'d_enum_generic_result_code.enum_generic_result_code'(2) -> not_found;
-'d_enum_generic_result_code.enum_generic_result_code'(3) -> invalid_parameter;
-'d_enum_generic_result_code.enum_generic_result_code'(4) -> unimplemented;
-'d_enum_generic_result_code.enum_generic_result_code'(5) -> deactivate_first;
-'d_enum_generic_result_code.enum_generic_result_code'(6) -> activate_first;
-'d_enum_generic_result_code.enum_generic_result_code'(7) -> entity_not_initialised;
-'d_enum_generic_result_code.enum_generic_result_code'(8) -> component_already_exists;
-'d_enum_generic_result_code.enum_generic_result_code'(V) -> V.
+'d_enum_generic_result_code.enum_generic_result_code'(0) ->
+    ok;
+'d_enum_generic_result_code.enum_generic_result_code'(1) ->
+    failed;
+'d_enum_generic_result_code.enum_generic_result_code'(2) ->
+    not_found;
+'d_enum_generic_result_code.enum_generic_result_code'(3) ->
+    invalid_parameter;
+'d_enum_generic_result_code.enum_generic_result_code'(4) ->
+    unimplemented;
+'d_enum_generic_result_code.enum_generic_result_code'(5) ->
+    deactivate_first;
+'d_enum_generic_result_code.enum_generic_result_code'(6) ->
+    activate_first;
+'d_enum_generic_result_code.enum_generic_result_code'(7) ->
+    entity_not_initialised;
+'d_enum_generic_result_code.enum_generic_result_code'(8) ->
+    component_already_exists;
+'d_enum_generic_result_code.enum_generic_result_code'(V) ->
+    V.
 
 read_group(Bin, FieldNum) ->
     {NumBytes, EndTagLen} = read_gr_b(Bin, 0, 0, 0, 0, FieldNum),
@@ -586,11 +1440,9 @@ read_group(Bin, FieldNum) ->
 %% (The only time the same group field number could occur would
 %% be in a nested sub message, but then it would be inside a
 %% length-delimited entry, which we skip-read by length.)
-read_gr_b(<<1:1, X:7, Tl/binary>>, N, Acc, NumBytes, TagLen, FieldNum)
-  when N < (32-7) ->
-    read_gr_b(Tl, N+7, X bsl N + Acc, NumBytes, TagLen+1, FieldNum);
-read_gr_b(<<0:1, X:7, Tl/binary>>, N, Acc, NumBytes, TagLen,
-          FieldNum) ->
+read_gr_b(<<1:1, X:7, Tl/binary>>, N, Acc, NumBytes, TagLen, FieldNum) when N < 32 - 7 ->
+    read_gr_b(Tl, N + 7, X bsl N + Acc, NumBytes, TagLen + 1, FieldNum);
+read_gr_b(<<0:1, X:7, Tl/binary>>, N, Acc, NumBytes, TagLen, FieldNum) ->
     Key = X bsl N + Acc,
     TagLen1 = TagLen + 1,
     case {Key bsr 3, Key band 7} of
@@ -612,530 +1464,902 @@ read_gr_b(<<0:1, X:7, Tl/binary>>, N, Acc, NumBytes, TagLen,
             read_gr_b(Tl2, 0, 0, NumBytes + TagLen1 + 4, 0, FieldNum)
     end.
 
-read_gr_vi(<<1:1, _:7, Tl/binary>>, N, NumBytes, FieldNum)
-  when N < (64-7) ->
-    read_gr_vi(Tl, N+7, NumBytes+1, FieldNum);
+read_gr_vi(<<1:1, _:7, Tl/binary>>, N, NumBytes, FieldNum) when N < 64 - 7 ->
+    read_gr_vi(Tl, N + 7, NumBytes + 1, FieldNum);
 read_gr_vi(<<0:1, _:7, Tl/binary>>, _, NumBytes, FieldNum) ->
-    read_gr_b(Tl, 0, 0, NumBytes+1, 0, FieldNum).
+    read_gr_b(Tl, 0, 0, NumBytes + 1, 0, FieldNum).
 
-read_gr_ld(<<1:1, X:7, Tl/binary>>, N, Acc, NumBytes, FieldNum)
-  when N < (64-7) ->
-    read_gr_ld(Tl, N+7, X bsl N + Acc, NumBytes+1, FieldNum);
+read_gr_ld(<<1:1, X:7, Tl/binary>>, N, Acc, NumBytes, FieldNum) when N < 64 - 7 ->
+    read_gr_ld(Tl, N + 7, X bsl N + Acc, NumBytes + 1, FieldNum);
 read_gr_ld(<<0:1, X:7, Tl/binary>>, N, Acc, NumBytes, FieldNum) ->
     Len = X bsl N + Acc,
     NumBytes1 = NumBytes + 1,
     <<_:Len/binary, Tl2/binary>> = Tl,
     read_gr_b(Tl2, 0, 0, NumBytes1 + Len, 0, FieldNum).
 
-merge_msgs(Prev, New, MsgName) when is_atom(MsgName) -> merge_msgs(Prev, New, MsgName, []).
+merge_msgs(Prev, New, MsgName) when is_atom(MsgName) ->
+    merge_msgs(Prev, New, MsgName, []).
 
 merge_msgs(Prev, New, MsgName, Opts) ->
     TrUserData = proplists:get_value(user_data, Opts),
     case MsgName of
-      camera_component_parameters -> merge_msg_camera_component_parameters(Prev, New, TrUserData);
-      m_entity_id -> merge_msg_m_entity_id(Prev, New, TrUserData);
-      generic_result_code -> merge_msg_generic_result_code(Prev, New, TrUserData);
-      vector_3 -> merge_msg_vector_3(Prev, New, TrUserData);
-      vector_4 -> merge_msg_vector_4(Prev, New, TrUserData)
+        camera_component_parameters ->
+            merge_msg_camera_component_parameters(Prev, New, TrUserData);
+        m_entity_id ->
+            merge_msg_m_entity_id(Prev, New, TrUserData);
+        generic_result_code ->
+            merge_msg_generic_result_code(Prev, New, TrUserData);
+        vector_3 ->
+            merge_msg_vector_3(Prev, New, TrUserData);
+        vector_4 ->
+            merge_msg_vector_4(Prev, New, TrUserData)
     end.
 
--compile({nowarn_unused_function,merge_msg_camera_component_parameters/3}).
+-compile({nowarn_unused_function, merge_msg_camera_component_parameters/3}).
+
 merge_msg_camera_component_parameters(PMsg, NMsg, TrUserData) ->
     S1 = #{},
     case {PMsg, NMsg} of
-      {#{entity_id := PFentity_id}, #{entity_id := NFentity_id}} -> S1#{entity_id => merge_msg_m_entity_id(PFentity_id, NFentity_id, TrUserData)};
-      {_, #{entity_id := NFentity_id}} -> S1#{entity_id => NFentity_id};
-      {#{entity_id := PFentity_id}, _} -> S1#{entity_id => PFentity_id};
-      {_, _} -> S1
+        {#{entity_id := PFentity_id}, #{entity_id := NFentity_id}} ->
+            S1#{entity_id => merge_msg_m_entity_id(PFentity_id, NFentity_id, TrUserData)};
+        {_, #{entity_id := NFentity_id}} ->
+            S1#{entity_id => NFentity_id};
+        {#{entity_id := PFentity_id}, _} ->
+            S1#{entity_id => PFentity_id};
+        {_, _} ->
+            S1
     end.
 
--compile({nowarn_unused_function,merge_msg_m_entity_id/3}).
+-compile({nowarn_unused_function, merge_msg_m_entity_id/3}).
+
 merge_msg_m_entity_id(PMsg, NMsg, _) ->
     S1 = #{},
     case {PMsg, NMsg} of
-      {_, #{entity_id := NFentity_id}} -> S1#{entity_id => NFentity_id};
-      {#{entity_id := PFentity_id}, _} -> S1#{entity_id => PFentity_id};
-      _ -> S1
+        {_, #{entity_id := NFentity_id}} ->
+            S1#{entity_id => NFentity_id};
+        {#{entity_id := PFentity_id}, _} ->
+            S1#{entity_id => PFentity_id};
+        _ ->
+            S1
     end.
 
--compile({nowarn_unused_function,merge_msg_generic_result_code/3}).
+-compile({nowarn_unused_function, merge_msg_generic_result_code/3}).
+
 merge_msg_generic_result_code(PMsg, NMsg, _) ->
     S1 = #{},
     case {PMsg, NMsg} of
-      {_, #{result_code := NFresult_code}} -> S1#{result_code => NFresult_code};
-      {#{result_code := PFresult_code}, _} -> S1#{result_code => PFresult_code};
-      _ -> S1
+        {_, #{result_code := NFresult_code}} ->
+            S1#{result_code => NFresult_code};
+        {#{result_code := PFresult_code}, _} ->
+            S1#{result_code => PFresult_code};
+        _ ->
+            S1
     end.
 
--compile({nowarn_unused_function,merge_msg_vector_3/3}).
+-compile({nowarn_unused_function, merge_msg_vector_3/3}).
+
 merge_msg_vector_3(PMsg, NMsg, _) ->
     S1 = #{},
     S2 = case {PMsg, NMsg} of
-	   {_, #{x := NFx}} -> S1#{x => NFx};
-	   {#{x := PFx}, _} -> S1#{x => PFx};
-	   _ -> S1
-	 end,
+             {_, #{x := NFx}} ->
+                 S1#{x => NFx};
+             {#{x := PFx}, _} ->
+                 S1#{x => PFx};
+             _ ->
+                 S1
+         end,
     S3 = case {PMsg, NMsg} of
-	   {_, #{y := NFy}} -> S2#{y => NFy};
-	   {#{y := PFy}, _} -> S2#{y => PFy};
-	   _ -> S2
-	 end,
+             {_, #{y := NFy}} ->
+                 S2#{y => NFy};
+             {#{y := PFy}, _} ->
+                 S2#{y => PFy};
+             _ ->
+                 S2
+         end,
     case {PMsg, NMsg} of
-      {_, #{z := NFz}} -> S3#{z => NFz};
-      {#{z := PFz}, _} -> S3#{z => PFz};
-      _ -> S3
+        {_, #{z := NFz}} ->
+            S3#{z => NFz};
+        {#{z := PFz}, _} ->
+            S3#{z => PFz};
+        _ ->
+            S3
     end.
 
--compile({nowarn_unused_function,merge_msg_vector_4/3}).
+-compile({nowarn_unused_function, merge_msg_vector_4/3}).
+
 merge_msg_vector_4(PMsg, NMsg, _) ->
     S1 = #{},
     S2 = case {PMsg, NMsg} of
-	   {_, #{w := NFw}} -> S1#{w => NFw};
-	   {#{w := PFw}, _} -> S1#{w => PFw};
-	   _ -> S1
-	 end,
+             {_, #{w := NFw}} ->
+                 S1#{w => NFw};
+             {#{w := PFw}, _} ->
+                 S1#{w => PFw};
+             _ ->
+                 S1
+         end,
     S3 = case {PMsg, NMsg} of
-	   {_, #{x := NFx}} -> S2#{x => NFx};
-	   {#{x := PFx}, _} -> S2#{x => PFx};
-	   _ -> S2
-	 end,
+             {_, #{x := NFx}} ->
+                 S2#{x => NFx};
+             {#{x := PFx}, _} ->
+                 S2#{x => PFx};
+             _ ->
+                 S2
+         end,
     S4 = case {PMsg, NMsg} of
-	   {_, #{y := NFy}} -> S3#{y => NFy};
-	   {#{y := PFy}, _} -> S3#{y => PFy};
-	   _ -> S3
-	 end,
+             {_, #{y := NFy}} ->
+                 S3#{y => NFy};
+             {#{y := PFy}, _} ->
+                 S3#{y => PFy};
+             _ ->
+                 S3
+         end,
     case {PMsg, NMsg} of
-      {_, #{z := NFz}} -> S4#{z => NFz};
-      {#{z := PFz}, _} -> S4#{z => PFz};
-      _ -> S4
+        {_, #{z := NFz}} ->
+            S4#{z => NFz};
+        {#{z := PFz}, _} ->
+            S4#{z => PFz};
+        _ ->
+            S4
     end.
 
-
-verify_msg(Msg, MsgName) when is_atom(MsgName) -> verify_msg(Msg, MsgName, []).
+verify_msg(Msg, MsgName) when is_atom(MsgName) ->
+    verify_msg(Msg, MsgName, []).
 
 verify_msg(Msg, MsgName, Opts) ->
     TrUserData = proplists:get_value(user_data, Opts),
     case MsgName of
-      camera_component_parameters -> v_msg_camera_component_parameters(Msg, [MsgName], TrUserData);
-      m_entity_id -> v_msg_m_entity_id(Msg, [MsgName], TrUserData);
-      generic_result_code -> v_msg_generic_result_code(Msg, [MsgName], TrUserData);
-      vector_3 -> v_msg_vector_3(Msg, [MsgName], TrUserData);
-      vector_4 -> v_msg_vector_4(Msg, [MsgName], TrUserData);
-      _ -> mk_type_error(not_a_known_message, Msg, [])
+        camera_component_parameters ->
+            v_msg_camera_component_parameters(Msg, [MsgName], TrUserData);
+        m_entity_id ->
+            v_msg_m_entity_id(Msg, [MsgName], TrUserData);
+        generic_result_code ->
+            v_msg_generic_result_code(Msg, [MsgName], TrUserData);
+        vector_3 ->
+            v_msg_vector_3(Msg, [MsgName], TrUserData);
+        vector_4 ->
+            v_msg_vector_4(Msg, [MsgName], TrUserData);
+        _ ->
+            mk_type_error(not_a_known_message, Msg, [])
     end.
 
+-compile({nowarn_unused_function, v_msg_camera_component_parameters/3}).
 
--compile({nowarn_unused_function,v_msg_camera_component_parameters/3}).
--dialyzer({nowarn_function,v_msg_camera_component_parameters/3}).
+-dialyzer({nowarn_function, v_msg_camera_component_parameters/3}).
+
 v_msg_camera_component_parameters(#{} = M, Path, TrUserData) ->
     case M of
-      #{entity_id := F1} -> v_msg_m_entity_id(F1, [entity_id | Path], TrUserData);
-      _ -> ok
+        #{entity_id := F1} ->
+            v_msg_m_entity_id(F1, [entity_id | Path], TrUserData);
+        _ ->
+            ok
     end,
-    lists:foreach(fun (entity_id) -> ok;
-		      (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
-		  end,
-		  maps:keys(M)),
+    lists:foreach(fun (entity_id) ->
+                          ok;
+                      (OtherKey) ->
+                          mk_type_error({extraneous_key, OtherKey}, M, Path)
+                  end,
+                  maps:keys(M)),
     ok;
-v_msg_camera_component_parameters(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), camera_component_parameters}, M, Path);
-v_msg_camera_component_parameters(X, Path, _TrUserData) -> mk_type_error({expected_msg, camera_component_parameters}, X, Path).
+v_msg_camera_component_parameters(M, Path, _TrUserData) when is_map(M) ->
+    mk_type_error({missing_fields, [] -- maps:keys(M), camera_component_parameters}, M, Path);
+v_msg_camera_component_parameters(X, Path, _TrUserData) ->
+    mk_type_error({expected_msg, camera_component_parameters}, X, Path).
 
--compile({nowarn_unused_function,v_msg_m_entity_id/3}).
--dialyzer({nowarn_function,v_msg_m_entity_id/3}).
+-compile({nowarn_unused_function, v_msg_m_entity_id/3}).
+
+-dialyzer({nowarn_function, v_msg_m_entity_id/3}).
+
 v_msg_m_entity_id(#{} = M, Path, TrUserData) ->
     case M of
-      #{entity_id := F1} -> v_type_uint64(F1, [entity_id | Path], TrUserData);
-      _ -> ok
+        #{entity_id := F1} ->
+            v_type_uint64(F1, [entity_id | Path], TrUserData);
+        _ ->
+            ok
     end,
-    lists:foreach(fun (entity_id) -> ok;
-		      (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
-		  end,
-		  maps:keys(M)),
+    lists:foreach(fun (entity_id) ->
+                          ok;
+                      (OtherKey) ->
+                          mk_type_error({extraneous_key, OtherKey}, M, Path)
+                  end,
+                  maps:keys(M)),
     ok;
-v_msg_m_entity_id(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), m_entity_id}, M, Path);
-v_msg_m_entity_id(X, Path, _TrUserData) -> mk_type_error({expected_msg, m_entity_id}, X, Path).
+v_msg_m_entity_id(M, Path, _TrUserData) when is_map(M) ->
+    mk_type_error({missing_fields, [] -- maps:keys(M), m_entity_id}, M, Path);
+v_msg_m_entity_id(X, Path, _TrUserData) ->
+    mk_type_error({expected_msg, m_entity_id}, X, Path).
 
--compile({nowarn_unused_function,v_msg_generic_result_code/3}).
--dialyzer({nowarn_function,v_msg_generic_result_code/3}).
+-compile({nowarn_unused_function, v_msg_generic_result_code/3}).
+
+-dialyzer({nowarn_function, v_msg_generic_result_code/3}).
+
 v_msg_generic_result_code(#{} = M, Path, TrUserData) ->
     case M of
-      #{result_code := F1} -> 'v_enum_generic_result_code.enum_generic_result_code'(F1, [result_code | Path], TrUserData);
-      _ -> ok
+        #{result_code := F1} ->
+            'v_enum_generic_result_code.enum_generic_result_code'(F1,
+                                                                  [result_code | Path],
+                                                                  TrUserData);
+        _ ->
+            ok
     end,
-    lists:foreach(fun (result_code) -> ok;
-		      (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
-		  end,
-		  maps:keys(M)),
+    lists:foreach(fun (result_code) ->
+                          ok;
+                      (OtherKey) ->
+                          mk_type_error({extraneous_key, OtherKey}, M, Path)
+                  end,
+                  maps:keys(M)),
     ok;
-v_msg_generic_result_code(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), generic_result_code}, M, Path);
-v_msg_generic_result_code(X, Path, _TrUserData) -> mk_type_error({expected_msg, generic_result_code}, X, Path).
+v_msg_generic_result_code(M, Path, _TrUserData) when is_map(M) ->
+    mk_type_error({missing_fields, [] -- maps:keys(M), generic_result_code}, M, Path);
+v_msg_generic_result_code(X, Path, _TrUserData) ->
+    mk_type_error({expected_msg, generic_result_code}, X, Path).
 
--compile({nowarn_unused_function,v_msg_vector_3/3}).
--dialyzer({nowarn_function,v_msg_vector_3/3}).
+-compile({nowarn_unused_function, v_msg_vector_3/3}).
+
+-dialyzer({nowarn_function, v_msg_vector_3/3}).
+
 v_msg_vector_3(#{} = M, Path, TrUserData) ->
     case M of
-      #{x := F1} -> v_type_float(F1, [x | Path], TrUserData);
-      _ -> ok
+        #{x := F1} ->
+            v_type_float(F1, [x | Path], TrUserData);
+        _ ->
+            ok
     end,
     case M of
-      #{y := F2} -> v_type_float(F2, [y | Path], TrUserData);
-      _ -> ok
+        #{y := F2} ->
+            v_type_float(F2, [y | Path], TrUserData);
+        _ ->
+            ok
     end,
     case M of
-      #{z := F3} -> v_type_float(F3, [z | Path], TrUserData);
-      _ -> ok
+        #{z := F3} ->
+            v_type_float(F3, [z | Path], TrUserData);
+        _ ->
+            ok
     end,
-    lists:foreach(fun (x) -> ok;
-		      (y) -> ok;
-		      (z) -> ok;
-		      (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
-		  end,
-		  maps:keys(M)),
+    lists:foreach(fun (x) ->
+                          ok;
+                      (y) ->
+                          ok;
+                      (z) ->
+                          ok;
+                      (OtherKey) ->
+                          mk_type_error({extraneous_key, OtherKey}, M, Path)
+                  end,
+                  maps:keys(M)),
     ok;
-v_msg_vector_3(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), vector_3}, M, Path);
-v_msg_vector_3(X, Path, _TrUserData) -> mk_type_error({expected_msg, vector_3}, X, Path).
+v_msg_vector_3(M, Path, _TrUserData) when is_map(M) ->
+    mk_type_error({missing_fields, [] -- maps:keys(M), vector_3}, M, Path);
+v_msg_vector_3(X, Path, _TrUserData) ->
+    mk_type_error({expected_msg, vector_3}, X, Path).
 
--compile({nowarn_unused_function,v_msg_vector_4/3}).
--dialyzer({nowarn_function,v_msg_vector_4/3}).
+-compile({nowarn_unused_function, v_msg_vector_4/3}).
+
+-dialyzer({nowarn_function, v_msg_vector_4/3}).
+
 v_msg_vector_4(#{} = M, Path, TrUserData) ->
     case M of
-      #{w := F1} -> v_type_float(F1, [w | Path], TrUserData);
-      _ -> ok
+        #{w := F1} ->
+            v_type_float(F1, [w | Path], TrUserData);
+        _ ->
+            ok
     end,
     case M of
-      #{x := F2} -> v_type_float(F2, [x | Path], TrUserData);
-      _ -> ok
+        #{x := F2} ->
+            v_type_float(F2, [x | Path], TrUserData);
+        _ ->
+            ok
     end,
     case M of
-      #{y := F3} -> v_type_float(F3, [y | Path], TrUserData);
-      _ -> ok
+        #{y := F3} ->
+            v_type_float(F3, [y | Path], TrUserData);
+        _ ->
+            ok
     end,
     case M of
-      #{z := F4} -> v_type_float(F4, [z | Path], TrUserData);
-      _ -> ok
+        #{z := F4} ->
+            v_type_float(F4, [z | Path], TrUserData);
+        _ ->
+            ok
     end,
-    lists:foreach(fun (w) -> ok;
-		      (x) -> ok;
-		      (y) -> ok;
-		      (z) -> ok;
-		      (OtherKey) -> mk_type_error({extraneous_key, OtherKey}, M, Path)
-		  end,
-		  maps:keys(M)),
+    lists:foreach(fun (w) ->
+                          ok;
+                      (x) ->
+                          ok;
+                      (y) ->
+                          ok;
+                      (z) ->
+                          ok;
+                      (OtherKey) ->
+                          mk_type_error({extraneous_key, OtherKey}, M, Path)
+                  end,
+                  maps:keys(M)),
     ok;
-v_msg_vector_4(M, Path, _TrUserData) when is_map(M) -> mk_type_error({missing_fields, [] -- maps:keys(M), vector_4}, M, Path);
-v_msg_vector_4(X, Path, _TrUserData) -> mk_type_error({expected_msg, vector_4}, X, Path).
+v_msg_vector_4(M, Path, _TrUserData) when is_map(M) ->
+    mk_type_error({missing_fields, [] -- maps:keys(M), vector_4}, M, Path);
+v_msg_vector_4(X, Path, _TrUserData) ->
+    mk_type_error({expected_msg, vector_4}, X, Path).
 
--compile({nowarn_unused_function,'v_enum_generic_result_code.enum_generic_result_code'/3}).
--dialyzer({nowarn_function,'v_enum_generic_result_code.enum_generic_result_code'/3}).
-'v_enum_generic_result_code.enum_generic_result_code'(ok, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(failed, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(not_found, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(invalid_parameter, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(unimplemented, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(deactivate_first, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(activate_first, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(entity_not_initialised, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(component_already_exists, _Path, _TrUserData) -> ok;
-'v_enum_generic_result_code.enum_generic_result_code'(V, Path, TrUserData) when is_integer(V) -> v_type_sint32(V, Path, TrUserData);
-'v_enum_generic_result_code.enum_generic_result_code'(X, Path, _TrUserData) -> mk_type_error({invalid_enum, 'generic_result_code.enum_generic_result_code'}, X, Path).
+-compile({nowarn_unused_function,
+          'v_enum_generic_result_code.enum_generic_result_code'/3}).
 
--compile({nowarn_unused_function,v_type_sint32/3}).
--dialyzer({nowarn_function,v_type_sint32/3}).
-v_type_sint32(N, _Path, _TrUserData) when -2147483648 =< N, N =< 2147483647 -> ok;
-v_type_sint32(N, Path, _TrUserData) when is_integer(N) -> mk_type_error({value_out_of_range, sint32, signed, 32}, N, Path);
-v_type_sint32(X, Path, _TrUserData) -> mk_type_error({bad_integer, sint32, signed, 32}, X, Path).
+-dialyzer({nowarn_function, 'v_enum_generic_result_code.enum_generic_result_code'/3}).
 
--compile({nowarn_unused_function,v_type_uint64/3}).
--dialyzer({nowarn_function,v_type_uint64/3}).
-v_type_uint64(N, _Path, _TrUserData) when 0 =< N, N =< 18446744073709551615 -> ok;
-v_type_uint64(N, Path, _TrUserData) when is_integer(N) -> mk_type_error({value_out_of_range, uint64, unsigned, 64}, N, Path);
-v_type_uint64(X, Path, _TrUserData) -> mk_type_error({bad_integer, uint64, unsigned, 64}, X, Path).
+'v_enum_generic_result_code.enum_generic_result_code'(ok, _Path, _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(failed, _Path, _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(not_found, _Path, _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(invalid_parameter,
+                                                      _Path,
+                                                      _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(unimplemented,
+                                                      _Path,
+                                                      _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(deactivate_first,
+                                                      _Path,
+                                                      _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(activate_first,
+                                                      _Path,
+                                                      _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(entity_not_initialised,
+                                                      _Path,
+                                                      _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(component_already_exists,
+                                                      _Path,
+                                                      _TrUserData) ->
+    ok;
+'v_enum_generic_result_code.enum_generic_result_code'(V, Path, TrUserData)
+    when is_integer(V) ->
+    v_type_sint32(V, Path, TrUserData);
+'v_enum_generic_result_code.enum_generic_result_code'(X, Path, _TrUserData) ->
+    mk_type_error({invalid_enum, 'generic_result_code.enum_generic_result_code'}, X, Path).
 
--compile({nowarn_unused_function,v_type_float/3}).
--dialyzer({nowarn_function,v_type_float/3}).
-v_type_float(N, _Path, _TrUserData) when is_float(N) -> ok;
-v_type_float(N, _Path, _TrUserData) when is_integer(N) -> ok;
-v_type_float(infinity, _Path, _TrUserData) -> ok;
-v_type_float('-infinity', _Path, _TrUserData) -> ok;
-v_type_float(nan, _Path, _TrUserData) -> ok;
-v_type_float(X, Path, _TrUserData) -> mk_type_error(bad_float_value, X, Path).
+-compile({nowarn_unused_function, v_type_sint32/3}).
 
--compile({nowarn_unused_function,mk_type_error/3}).
+-dialyzer({nowarn_function, v_type_sint32/3}).
+
+v_type_sint32(N, _Path, _TrUserData) when -2147483648 =< N, N =< 2147483647 ->
+    ok;
+v_type_sint32(N, Path, _TrUserData) when is_integer(N) ->
+    mk_type_error({value_out_of_range, sint32, signed, 32}, N, Path);
+v_type_sint32(X, Path, _TrUserData) ->
+    mk_type_error({bad_integer, sint32, signed, 32}, X, Path).
+
+-compile({nowarn_unused_function, v_type_uint64/3}).
+
+-dialyzer({nowarn_function, v_type_uint64/3}).
+
+v_type_uint64(N, _Path, _TrUserData) when 0 =< N, N =< 18446744073709551615 ->
+    ok;
+v_type_uint64(N, Path, _TrUserData) when is_integer(N) ->
+    mk_type_error({value_out_of_range, uint64, unsigned, 64}, N, Path);
+v_type_uint64(X, Path, _TrUserData) ->
+    mk_type_error({bad_integer, uint64, unsigned, 64}, X, Path).
+
+-compile({nowarn_unused_function, v_type_float/3}).
+
+-dialyzer({nowarn_function, v_type_float/3}).
+
+v_type_float(N, _Path, _TrUserData) when is_float(N) ->
+    ok;
+v_type_float(N, _Path, _TrUserData) when is_integer(N) ->
+    ok;
+v_type_float(infinity, _Path, _TrUserData) ->
+    ok;
+v_type_float('-infinity', _Path, _TrUserData) ->
+    ok;
+v_type_float(nan, _Path, _TrUserData) ->
+    ok;
+v_type_float(X, Path, _TrUserData) ->
+    mk_type_error(bad_float_value, X, Path).
+
+-compile({nowarn_unused_function, mk_type_error/3}).
+
 -spec mk_type_error(_, _, list()) -> no_return().
-mk_type_error(Error, ValueSeen, Path) -> Path2 = prettify_path(Path), erlang:error({gpb_type_error, {Error, [{value, ValueSeen}, {path, Path2}]}}).
+mk_type_error(Error, ValueSeen, Path) ->
+    Path2 = prettify_path(Path),
+    erlang:error({gpb_type_error, {Error, [{value, ValueSeen}, {path, Path2}]}}).
 
+-compile({nowarn_unused_function, prettify_path/1}).
 
--compile({nowarn_unused_function,prettify_path/1}).
--dialyzer({nowarn_function,prettify_path/1}).
-prettify_path([]) -> top_level;
-prettify_path(PathR) -> list_to_atom(lists:append(lists:join(".", lists:map(fun atom_to_list/1, lists:reverse(PathR))))).
+-dialyzer({nowarn_function, prettify_path/1}).
 
+prettify_path([]) ->
+    top_level;
+prettify_path(PathR) ->
+    list_to_atom(lists:append(
+                     lists:join(".", lists:map(fun atom_to_list/1, lists:reverse(PathR))))).
 
--compile({nowarn_unused_function,id/2}).
--compile({inline,id/2}).
-id(X, _TrUserData) -> X.
+-compile({nowarn_unused_function, id/2}).
+-compile({inline, id/2}).
 
--compile({nowarn_unused_function,v_ok/3}).
--compile({inline,v_ok/3}).
-v_ok(_Value, _Path, _TrUserData) -> ok.
+id(X, _TrUserData) ->
+    X.
 
--compile({nowarn_unused_function,m_overwrite/3}).
--compile({inline,m_overwrite/3}).
-m_overwrite(_Prev, New, _TrUserData) -> New.
+-compile({nowarn_unused_function, v_ok/3}).
+-compile({inline, v_ok/3}).
 
--compile({nowarn_unused_function,cons/3}).
--compile({inline,cons/3}).
-cons(Elem, Acc, _TrUserData) -> [Elem | Acc].
+v_ok(_Value, _Path, _TrUserData) ->
+    ok.
 
--compile({nowarn_unused_function,lists_reverse/2}).
--compile({inline,lists_reverse/2}).
-'lists_reverse'(L, _TrUserData) -> lists:reverse(L).
--compile({nowarn_unused_function,'erlang_++'/3}).
--compile({inline,'erlang_++'/3}).
-'erlang_++'(A, B, _TrUserData) -> A ++ B.
+-compile({nowarn_unused_function, m_overwrite/3}).
+-compile({inline, m_overwrite/3}).
 
+m_overwrite(_Prev, New, _TrUserData) ->
+    New.
+
+-compile({nowarn_unused_function, cons/3}).
+-compile({inline, cons/3}).
+
+cons(Elem, Acc, _TrUserData) ->
+    [Elem | Acc].
+
+-compile({nowarn_unused_function, lists_reverse/2}).
+-compile({inline, lists_reverse/2}).
+
+lists_reverse(L, _TrUserData) ->
+    lists:reverse(L).
+
+-compile({nowarn_unused_function, 'erlang_++'/3}).
+-compile({inline, 'erlang_++'/3}).
+
+'erlang_++'(A, B, _TrUserData) ->
+    A ++ B.
 
 get_msg_defs() ->
-    [{{enum, 'generic_result_code.enum_generic_result_code'}, [{ok, 0}, {failed, 1}, {not_found, 2}, {invalid_parameter, 3}, {unimplemented, 4}, {deactivate_first, 5}, {activate_first, 6}, {entity_not_initialised, 7}, {component_already_exists, 8}]},
-     {{msg, camera_component_parameters}, [#{name => entity_id, fnum => 1, rnum => 2, type => {msg, m_entity_id}, occurrence => optional, opts => []}]},
-     {{msg, m_entity_id}, [#{name => entity_id, fnum => 1, rnum => 2, type => uint64, occurrence => optional, opts => []}]},
-     {{msg, generic_result_code}, [#{name => result_code, fnum => 1, rnum => 2, type => {enum, 'generic_result_code.enum_generic_result_code'}, occurrence => optional, opts => []}]},
+    [{{enum, 'generic_result_code.enum_generic_result_code'},
+      [{ok, 0},
+       {failed, 1},
+       {not_found, 2},
+       {invalid_parameter, 3},
+       {unimplemented, 4},
+       {deactivate_first, 5},
+       {activate_first, 6},
+       {entity_not_initialised, 7},
+       {component_already_exists, 8}]},
+     {{msg, camera_component_parameters},
+      [#{name => entity_id,
+         fnum => 1,
+         rnum => 2,
+         type => {msg, m_entity_id},
+         occurrence => optional,
+         opts => []}]},
+     {{msg, m_entity_id},
+      [#{name => entity_id,
+         fnum => 1,
+         rnum => 2,
+         type => uint64,
+         occurrence => optional,
+         opts => []}]},
+     {{msg, generic_result_code},
+      [#{name => result_code,
+         fnum => 1,
+         rnum => 2,
+         type => {enum, 'generic_result_code.enum_generic_result_code'},
+         occurrence => optional,
+         opts => []}]},
      {{msg, vector_3},
-      [#{name => x, fnum => 1, rnum => 2, type => float, occurrence => optional, opts => []}, #{name => y, fnum => 2, rnum => 3, type => float, occurrence => optional, opts => []},
-       #{name => z, fnum => 3, rnum => 4, type => float, occurrence => optional, opts => []}]},
+      [#{name => x,
+         fnum => 1,
+         rnum => 2,
+         type => float,
+         occurrence => optional,
+         opts => []},
+       #{name => y,
+         fnum => 2,
+         rnum => 3,
+         type => float,
+         occurrence => optional,
+         opts => []},
+       #{name => z,
+         fnum => 3,
+         rnum => 4,
+         type => float,
+         occurrence => optional,
+         opts => []}]},
      {{msg, vector_4},
-      [#{name => w, fnum => 1, rnum => 2, type => float, occurrence => optional, opts => []}, #{name => x, fnum => 2, rnum => 3, type => float, occurrence => optional, opts => []},
-       #{name => y, fnum => 3, rnum => 4, type => float, occurrence => optional, opts => []}, #{name => z, fnum => 4, rnum => 5, type => float, occurrence => optional, opts => []}]}].
+      [#{name => w,
+         fnum => 1,
+         rnum => 2,
+         type => float,
+         occurrence => optional,
+         opts => []},
+       #{name => x,
+         fnum => 2,
+         rnum => 3,
+         type => float,
+         occurrence => optional,
+         opts => []},
+       #{name => y,
+         fnum => 3,
+         rnum => 4,
+         type => float,
+         occurrence => optional,
+         opts => []},
+       #{name => z,
+         fnum => 4,
+         rnum => 5,
+         type => float,
+         occurrence => optional,
+         opts => []}]}].
 
+get_msg_names() ->
+    [camera_component_parameters, m_entity_id, generic_result_code, vector_3, vector_4].
 
-get_msg_names() -> [camera_component_parameters, m_entity_id, generic_result_code, vector_3, vector_4].
+get_group_names() ->
+    [].
 
+get_msg_or_group_names() ->
+    [camera_component_parameters, m_entity_id, generic_result_code, vector_3, vector_4].
 
-get_group_names() -> [].
-
-
-get_msg_or_group_names() -> [camera_component_parameters, m_entity_id, generic_result_code, vector_3, vector_4].
-
-
-get_enum_names() -> ['generic_result_code.enum_generic_result_code'].
-
+get_enum_names() ->
+    ['generic_result_code.enum_generic_result_code'].
 
 fetch_msg_def(MsgName) ->
     case find_msg_def(MsgName) of
-      Fs when is_list(Fs) -> Fs;
-      error -> erlang:error({no_such_msg, MsgName})
+        Fs when is_list(Fs) ->
+            Fs;
+        error ->
+            erlang:error({no_such_msg, MsgName})
     end.
-
 
 fetch_enum_def(EnumName) ->
     case find_enum_def(EnumName) of
-      Es when is_list(Es) -> Es;
-      error -> erlang:error({no_such_enum, EnumName})
+        Es when is_list(Es) ->
+            Es;
+        error ->
+            erlang:error({no_such_enum, EnumName})
     end.
 
-
-find_msg_def(camera_component_parameters) -> [#{name => entity_id, fnum => 1, rnum => 2, type => {msg, m_entity_id}, occurrence => optional, opts => []}];
-find_msg_def(m_entity_id) -> [#{name => entity_id, fnum => 1, rnum => 2, type => uint64, occurrence => optional, opts => []}];
-find_msg_def(generic_result_code) -> [#{name => result_code, fnum => 1, rnum => 2, type => {enum, 'generic_result_code.enum_generic_result_code'}, occurrence => optional, opts => []}];
+find_msg_def(camera_component_parameters) ->
+    [#{name => entity_id,
+       fnum => 1,
+       rnum => 2,
+       type => {msg, m_entity_id},
+       occurrence => optional,
+       opts => []}];
+find_msg_def(m_entity_id) ->
+    [#{name => entity_id,
+       fnum => 1,
+       rnum => 2,
+       type => uint64,
+       occurrence => optional,
+       opts => []}];
+find_msg_def(generic_result_code) ->
+    [#{name => result_code,
+       fnum => 1,
+       rnum => 2,
+       type => {enum, 'generic_result_code.enum_generic_result_code'},
+       occurrence => optional,
+       opts => []}];
 find_msg_def(vector_3) ->
-    [#{name => x, fnum => 1, rnum => 2, type => float, occurrence => optional, opts => []}, #{name => y, fnum => 2, rnum => 3, type => float, occurrence => optional, opts => []},
-     #{name => z, fnum => 3, rnum => 4, type => float, occurrence => optional, opts => []}];
+    [#{name => x,
+       fnum => 1,
+       rnum => 2,
+       type => float,
+       occurrence => optional,
+       opts => []},
+     #{name => y,
+       fnum => 2,
+       rnum => 3,
+       type => float,
+       occurrence => optional,
+       opts => []},
+     #{name => z,
+       fnum => 3,
+       rnum => 4,
+       type => float,
+       occurrence => optional,
+       opts => []}];
 find_msg_def(vector_4) ->
-    [#{name => w, fnum => 1, rnum => 2, type => float, occurrence => optional, opts => []}, #{name => x, fnum => 2, rnum => 3, type => float, occurrence => optional, opts => []},
-     #{name => y, fnum => 3, rnum => 4, type => float, occurrence => optional, opts => []}, #{name => z, fnum => 4, rnum => 5, type => float, occurrence => optional, opts => []}];
-find_msg_def(_) -> error.
-
+    [#{name => w,
+       fnum => 1,
+       rnum => 2,
+       type => float,
+       occurrence => optional,
+       opts => []},
+     #{name => x,
+       fnum => 2,
+       rnum => 3,
+       type => float,
+       occurrence => optional,
+       opts => []},
+     #{name => y,
+       fnum => 3,
+       rnum => 4,
+       type => float,
+       occurrence => optional,
+       opts => []},
+     #{name => z,
+       fnum => 4,
+       rnum => 5,
+       type => float,
+       occurrence => optional,
+       opts => []}];
+find_msg_def(_) ->
+    error.
 
 find_enum_def('generic_result_code.enum_generic_result_code') ->
-    [{ok, 0}, {failed, 1}, {not_found, 2}, {invalid_parameter, 3}, {unimplemented, 4}, {deactivate_first, 5}, {activate_first, 6}, {entity_not_initialised, 7}, {component_already_exists, 8}];
-find_enum_def(_) -> error.
+    [{ok, 0},
+     {failed, 1},
+     {not_found, 2},
+     {invalid_parameter, 3},
+     {unimplemented, 4},
+     {deactivate_first, 5},
+     {activate_first, 6},
+     {entity_not_initialised, 7},
+     {component_already_exists, 8}];
+find_enum_def(_) ->
+    error.
 
+enum_symbol_by_value('generic_result_code.enum_generic_result_code', Value) ->
+    'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(Value).
 
-enum_symbol_by_value('generic_result_code.enum_generic_result_code', Value) -> 'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(Value).
+enum_value_by_symbol('generic_result_code.enum_generic_result_code', Sym) ->
+    'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(Sym).
 
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(0) ->
+    ok;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(1) ->
+    failed;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(2) ->
+    not_found;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(3) ->
+    invalid_parameter;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(4) ->
+    unimplemented;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(5) ->
+    deactivate_first;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(6) ->
+    activate_first;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(7) ->
+    entity_not_initialised;
+'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(8) ->
+    component_already_exists.
 
-enum_value_by_symbol('generic_result_code.enum_generic_result_code', Sym) -> 'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(Sym).
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(ok) ->
+    0;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(failed) ->
+    1;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(not_found) ->
+    2;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(invalid_parameter) ->
+    3;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(unimplemented) ->
+    4;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(deactivate_first) ->
+    5;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(activate_first) ->
+    6;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(entity_not_initialised) ->
+    7;
+'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(component_already_exists) ->
+    8.
 
-
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(0) -> ok;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(1) -> failed;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(2) -> not_found;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(3) -> invalid_parameter;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(4) -> unimplemented;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(5) -> deactivate_first;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(6) -> activate_first;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(7) -> entity_not_initialised;
-'enum_symbol_by_value_generic_result_code.enum_generic_result_code'(8) -> component_already_exists.
-
-
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(ok) -> 0;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(failed) -> 1;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(not_found) -> 2;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(invalid_parameter) -> 3;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(unimplemented) -> 4;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(deactivate_first) -> 5;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(activate_first) -> 6;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(entity_not_initialised) -> 7;
-'enum_value_by_symbol_generic_result_code.enum_generic_result_code'(component_already_exists) -> 8.
-
-
-get_service_names() -> ['eGem.camera_service'].
-
+get_service_names() ->
+    ['eGem.camera_service'].
 
 get_service_def('eGem.camera_service') ->
     {{service, 'eGem.camera_service'},
-     [#{name => add_camera_component, input => camera_component_parameters, output => generic_result_code, input_stream => false, output_stream => false, opts => []},
-      #{name => activate_camera_entity, input => m_entity_id, output => generic_result_code, input_stream => false, output_stream => false, opts => []}]};
-get_service_def(_) -> error.
+     [#{name => add_camera_component,
+        input => camera_component_parameters,
+        output => generic_result_code,
+        input_stream => false,
+        output_stream => false,
+        opts => []},
+      #{name => activate_camera_entity,
+        input => m_entity_id,
+        output => generic_result_code,
+        input_stream => false,
+        output_stream => false,
+        opts => []}]};
+get_service_def(_) ->
+    error.
 
+get_rpc_names('eGem.camera_service') ->
+    [add_camera_component, activate_camera_entity];
+get_rpc_names(_) ->
+    error.
 
-get_rpc_names('eGem.camera_service') -> [add_camera_component, activate_camera_entity];
-get_rpc_names(_) -> error.
+find_rpc_def('eGem.camera_service', RpcName) ->
+    'find_rpc_def_eGem.camera_service'(RpcName);
+find_rpc_def(_, _) ->
+    error.
 
-
-find_rpc_def('eGem.camera_service', RpcName) -> 'find_rpc_def_eGem.camera_service'(RpcName);
-find_rpc_def(_, _) -> error.
-
-
-'find_rpc_def_eGem.camera_service'(add_camera_component) -> #{name => add_camera_component, input => camera_component_parameters, output => generic_result_code, input_stream => false, output_stream => false, opts => []};
-'find_rpc_def_eGem.camera_service'(activate_camera_entity) -> #{name => activate_camera_entity, input => m_entity_id, output => generic_result_code, input_stream => false, output_stream => false, opts => []};
-'find_rpc_def_eGem.camera_service'(_) -> error.
-
+'find_rpc_def_eGem.camera_service'(add_camera_component) ->
+    #{name => add_camera_component,
+      input => camera_component_parameters,
+      output => generic_result_code,
+      input_stream => false,
+      output_stream => false,
+      opts => []};
+'find_rpc_def_eGem.camera_service'(activate_camera_entity) ->
+    #{name => activate_camera_entity,
+      input => m_entity_id,
+      output => generic_result_code,
+      input_stream => false,
+      output_stream => false,
+      opts => []};
+'find_rpc_def_eGem.camera_service'(_) ->
+    error.
 
 fetch_rpc_def(ServiceName, RpcName) ->
     case find_rpc_def(ServiceName, RpcName) of
-      Def when is_map(Def) -> Def;
-      error -> erlang:error({no_such_rpc, ServiceName, RpcName})
+        Def when is_map(Def) ->
+            Def;
+        error ->
+            erlang:error({no_such_rpc, ServiceName, RpcName})
     end.
-
 
 %% Convert a a fully qualified (ie with package name) service name
 %% as a binary to a service name as an atom.
-fqbin_to_service_name(<<"eGem.camera_service">>) -> 'eGem.camera_service';
-fqbin_to_service_name(X) -> error({gpb_error, {badservice, X}}).
-
+fqbin_to_service_name(<<"eGem.camera_service">>) ->
+    'eGem.camera_service';
+fqbin_to_service_name(X) ->
+    error({gpb_error, {badservice, X}}).
 
 %% Convert a service name as an atom to a fully qualified
 %% (ie with package name) name as a binary.
-service_name_to_fqbin('eGem.camera_service') -> <<"eGem.camera_service">>;
-service_name_to_fqbin(X) -> error({gpb_error, {badservice, X}}).
-
+service_name_to_fqbin('eGem.camera_service') ->
+    <<"eGem.camera_service">>;
+service_name_to_fqbin(X) ->
+    error({gpb_error, {badservice, X}}).
 
 %% Convert a a fully qualified (ie with package name) service name
 %% and an rpc name, both as binaries to a service name and an rpc
 %% name, as atoms.
-fqbins_to_service_and_rpc_name(<<"eGem.camera_service">>, <<"add_camera_component">>) -> {'eGem.camera_service', add_camera_component};
-fqbins_to_service_and_rpc_name(<<"eGem.camera_service">>, <<"activate_camera_entity">>) -> {'eGem.camera_service', activate_camera_entity};
-fqbins_to_service_and_rpc_name(S, R) -> error({gpb_error, {badservice_or_rpc, {S, R}}}).
-
+fqbins_to_service_and_rpc_name(<<"eGem.camera_service">>, <<"add_camera_component">>) ->
+    {'eGem.camera_service', add_camera_component};
+fqbins_to_service_and_rpc_name(<<"eGem.camera_service">>, <<"activate_camera_entity">>) ->
+    {'eGem.camera_service', activate_camera_entity};
+fqbins_to_service_and_rpc_name(S, R) ->
+    error({gpb_error, {badservice_or_rpc, {S, R}}}).
 
 %% Convert a service name and an rpc name, both as atoms,
 %% to a fully qualified (ie with package name) service name and
 %% an rpc name as binaries.
-service_and_rpc_name_to_fqbins('eGem.camera_service', add_camera_component) -> {<<"eGem.camera_service">>, <<"add_camera_component">>};
-service_and_rpc_name_to_fqbins('eGem.camera_service', activate_camera_entity) -> {<<"eGem.camera_service">>, <<"activate_camera_entity">>};
-service_and_rpc_name_to_fqbins(S, R) -> error({gpb_error, {badservice_or_rpc, {S, R}}}).
+service_and_rpc_name_to_fqbins('eGem.camera_service', add_camera_component) ->
+    {<<"eGem.camera_service">>, <<"add_camera_component">>};
+service_and_rpc_name_to_fqbins('eGem.camera_service', activate_camera_entity) ->
+    {<<"eGem.camera_service">>, <<"activate_camera_entity">>};
+service_and_rpc_name_to_fqbins(S, R) ->
+    error({gpb_error, {badservice_or_rpc, {S, R}}}).
 
+fqbin_to_msg_name(<<"eGem.camera_component_parameters">>) ->
+    camera_component_parameters;
+fqbin_to_msg_name(<<"eGem.m_entity_id">>) ->
+    m_entity_id;
+fqbin_to_msg_name(<<"eGem.generic_result_code">>) ->
+    generic_result_code;
+fqbin_to_msg_name(<<"eGem.vector3">>) ->
+    vector_3;
+fqbin_to_msg_name(<<"eGem.vector4">>) ->
+    vector_4;
+fqbin_to_msg_name(E) ->
+    error({gpb_error, {badmsg, E}}).
 
-fqbin_to_msg_name(<<"eGem.camera_component_parameters">>) -> camera_component_parameters;
-fqbin_to_msg_name(<<"eGem.m_entity_id">>) -> m_entity_id;
-fqbin_to_msg_name(<<"eGem.generic_result_code">>) -> generic_result_code;
-fqbin_to_msg_name(<<"eGem.vector3">>) -> vector_3;
-fqbin_to_msg_name(<<"eGem.vector4">>) -> vector_4;
-fqbin_to_msg_name(E) -> error({gpb_error, {badmsg, E}}).
+msg_name_to_fqbin(camera_component_parameters) ->
+    <<"eGem.camera_component_parameters">>;
+msg_name_to_fqbin(m_entity_id) ->
+    <<"eGem.m_entity_id">>;
+msg_name_to_fqbin(generic_result_code) ->
+    <<"eGem.generic_result_code">>;
+msg_name_to_fqbin(vector_3) ->
+    <<"eGem.vector3">>;
+msg_name_to_fqbin(vector_4) ->
+    <<"eGem.vector4">>;
+msg_name_to_fqbin(E) ->
+    error({gpb_error, {badmsg, E}}).
 
+fqbin_to_enum_name(<<"eGem.generic_result_code.enum_generic_result_code">>) ->
+    'generic_result_code.enum_generic_result_code';
+fqbin_to_enum_name(E) ->
+    error({gpb_error, {badenum, E}}).
 
-msg_name_to_fqbin(camera_component_parameters) -> <<"eGem.camera_component_parameters">>;
-msg_name_to_fqbin(m_entity_id) -> <<"eGem.m_entity_id">>;
-msg_name_to_fqbin(generic_result_code) -> <<"eGem.generic_result_code">>;
-msg_name_to_fqbin(vector_3) -> <<"eGem.vector3">>;
-msg_name_to_fqbin(vector_4) -> <<"eGem.vector4">>;
-msg_name_to_fqbin(E) -> error({gpb_error, {badmsg, E}}).
+enum_name_to_fqbin('generic_result_code.enum_generic_result_code') ->
+    <<"eGem.generic_result_code.enum_generic_result_code">>;
+enum_name_to_fqbin(E) ->
+    error({gpb_error, {badenum, E}}).
 
-
-fqbin_to_enum_name(<<"eGem.generic_result_code.enum_generic_result_code">>) -> 'generic_result_code.enum_generic_result_code';
-fqbin_to_enum_name(E) -> error({gpb_error, {badenum, E}}).
-
-
-enum_name_to_fqbin('generic_result_code.enum_generic_result_code') -> <<"eGem.generic_result_code.enum_generic_result_code">>;
-enum_name_to_fqbin(E) -> error({gpb_error, {badenum, E}}).
-
-
-get_package_name() -> eGem.
-
+get_package_name() ->
+    eGem.
 
 %% Whether or not the message names
 %% are prepended with package name or not.
-uses_packages() -> true.
+uses_packages() ->
+    true.
 
-
-source_basename() -> "camera_service.proto".
-
+source_basename() ->
+    "camera_service.proto".
 
 %% Retrieve all proto file names, also imported ones.
 %% The order is top-down. The first element is always the main
 %% source file. The files are returned with extension,
 %% see get_all_proto_names/0 for a version that returns
 %% the basenames sans extension
-get_all_source_basenames() -> ["camera_service.proto", "global_defs.proto"].
-
+get_all_source_basenames() ->
+    ["camera_service.proto", "global_defs.proto"].
 
 %% Retrieve all proto file names, also imported ones.
 %% The order is top-down. The first element is always the main
 %% source file. The files are returned sans .proto extension,
 %% to make it easier to use them with the various get_xyz_containment
 %% functions.
-get_all_proto_names() -> ["camera_service", "global_defs"].
+get_all_proto_names() ->
+    ["camera_service", "global_defs"].
 
+get_msg_containment("camera_service") ->
+    [camera_component_parameters];
+get_msg_containment("global_defs") ->
+    [generic_result_code, m_entity_id, vector_3, vector_4];
+get_msg_containment(P) ->
+    error({gpb_error, {badproto, P}}).
 
-get_msg_containment("camera_service") -> [camera_component_parameters];
-get_msg_containment("global_defs") -> [generic_result_code, m_entity_id, vector_3, vector_4];
-get_msg_containment(P) -> error({gpb_error, {badproto, P}}).
+get_pkg_containment("camera_service") ->
+    eGem;
+get_pkg_containment("global_defs") ->
+    eGem;
+get_pkg_containment(P) ->
+    error({gpb_error, {badproto, P}}).
 
+get_service_containment("camera_service") ->
+    ['eGem.camera_service'];
+get_service_containment("global_defs") ->
+    [];
+get_service_containment(P) ->
+    error({gpb_error, {badproto, P}}).
 
-get_pkg_containment("camera_service") -> eGem;
-get_pkg_containment("global_defs") -> eGem;
-get_pkg_containment(P) -> error({gpb_error, {badproto, P}}).
+get_rpc_containment("camera_service") ->
+    [{'eGem.camera_service', add_camera_component},
+     {'eGem.camera_service', activate_camera_entity}];
+get_rpc_containment("global_defs") ->
+    [];
+get_rpc_containment(P) ->
+    error({gpb_error, {badproto, P}}).
 
+get_enum_containment("camera_service") ->
+    [];
+get_enum_containment("global_defs") ->
+    ['generic_result_code.enum_generic_result_code'];
+get_enum_containment(P) ->
+    error({gpb_error, {badproto, P}}).
 
-get_service_containment("camera_service") -> ['eGem.camera_service'];
-get_service_containment("global_defs") -> [];
-get_service_containment(P) -> error({gpb_error, {badproto, P}}).
+get_proto_by_msg_name_as_fqbin(<<"eGem.vector3">>) ->
+    "global_defs";
+get_proto_by_msg_name_as_fqbin(<<"eGem.camera_component_parameters">>) ->
+    "camera_service";
+get_proto_by_msg_name_as_fqbin(<<"eGem.vector4">>) ->
+    "global_defs";
+get_proto_by_msg_name_as_fqbin(<<"eGem.m_entity_id">>) ->
+    "global_defs";
+get_proto_by_msg_name_as_fqbin(<<"eGem.generic_result_code">>) ->
+    "global_defs";
+get_proto_by_msg_name_as_fqbin(E) ->
+    error({gpb_error, {badmsg, E}}).
 
+get_proto_by_service_name_as_fqbin(<<"eGem.camera_service">>) ->
+    "camera_service";
+get_proto_by_service_name_as_fqbin(E) ->
+    error({gpb_error, {badservice, E}}).
 
-get_rpc_containment("camera_service") -> [{'eGem.camera_service', add_camera_component}, {'eGem.camera_service', activate_camera_entity}];
-get_rpc_containment("global_defs") -> [];
-get_rpc_containment(P) -> error({gpb_error, {badproto, P}}).
+get_proto_by_enum_name_as_fqbin(<<"eGem.generic_result_code.enum_generic_result_code">>) ->
+    "global_defs";
+get_proto_by_enum_name_as_fqbin(E) ->
+    error({gpb_error, {badenum, E}}).
 
-
-get_enum_containment("camera_service") -> [];
-get_enum_containment("global_defs") -> ['generic_result_code.enum_generic_result_code'];
-get_enum_containment(P) -> error({gpb_error, {badproto, P}}).
-
-
-get_proto_by_msg_name_as_fqbin(<<"eGem.vector3">>) -> "global_defs";
-get_proto_by_msg_name_as_fqbin(<<"eGem.camera_component_parameters">>) -> "camera_service";
-get_proto_by_msg_name_as_fqbin(<<"eGem.vector4">>) -> "global_defs";
-get_proto_by_msg_name_as_fqbin(<<"eGem.m_entity_id">>) -> "global_defs";
-get_proto_by_msg_name_as_fqbin(<<"eGem.generic_result_code">>) -> "global_defs";
-get_proto_by_msg_name_as_fqbin(E) -> error({gpb_error, {badmsg, E}}).
-
-
-get_proto_by_service_name_as_fqbin(<<"eGem.camera_service">>) -> "camera_service";
-get_proto_by_service_name_as_fqbin(E) -> error({gpb_error, {badservice, E}}).
-
-
-get_proto_by_enum_name_as_fqbin(<<"eGem.generic_result_code.enum_generic_result_code">>) -> "global_defs";
-get_proto_by_enum_name_as_fqbin(E) -> error({gpb_error, {badenum, E}}).
-
-
-get_protos_by_pkg_name_as_fqbin(<<"eGem">>) -> ["camera_service", "global_defs"];
-get_protos_by_pkg_name_as_fqbin(E) -> error({gpb_error, {badpkg, E}}).
-
-
+get_protos_by_pkg_name_as_fqbin(<<"eGem">>) ->
+    ["camera_service", "global_defs"];
+get_protos_by_pkg_name_as_fqbin(E) ->
+    error({gpb_error, {badpkg, E}}).
 
 gpb_version_as_string() ->
     "4.12.0".
 
 gpb_version_as_list() ->
-    [4,12,0].
+    [4, 12, 0].

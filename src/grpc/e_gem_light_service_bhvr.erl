@@ -9,13 +9,13 @@
 
 %% @doc Unary RPC
 -callback add_light_component(ctx:ctx(), light_service_pb:light_component_parameters()) ->
-    {ok, light_service_pb:generic_result_code(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                                 {ok, light_service_pb:generic_result_code(), ctx:ctx()} |
+                                 grpcbox_stream:grpc_error_response().
 %% @doc Unary RPC
 -callback remove_light_components(ctx:ctx(), light_service_pb:m_entity_id()) ->
-    {ok, light_service_pb:generic_result_code(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                                     {ok, light_service_pb:generic_result_code(), ctx:ctx()} |
+                                     grpcbox_stream:grpc_error_response().
 %% @doc Unary RPC
 -callback update_light_status(ctx:ctx(), light_service_pb:light_component_parameters()) ->
-    {ok, light_service_pb:generic_result_code(), ctx:ctx()} | grpcbox_stream:grpc_error_response().
-
+                                 {ok, light_service_pb:generic_result_code(), ctx:ctx()} |
+                                 grpcbox_stream:grpc_error_response().

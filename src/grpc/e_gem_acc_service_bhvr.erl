@@ -7,7 +7,6 @@
 
 -module(e_gem_acc_service_bhvr).
 
-%% @doc 
+%% @doc
 -callback send_predicate(reference(), grpcbox_stream:t()) ->
-    ok | grpcbox_stream:grpc_error_response().
-
+                            ok | grpcbox_stream:grpc_error_response().
