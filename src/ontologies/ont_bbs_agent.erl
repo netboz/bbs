@@ -1,5 +1,5 @@
 %%%-------------------------------------------------------------------
-%%% @author yan
+%%% @author Yan
 %%% @copyright (C) 2020, QengHo
 %%% @doc
 %%%
@@ -18,8 +18,10 @@
 %% Prolog API
 
 -define(ERLANG_PREDS,
-        [{{new_knowledge_base, 1}, ?MODULE, new_knowledge_base_predicate},
-         {{wait_for, 2}, ?MODULE, wait_for_predicate}]).
+  [
+    {{new_knowledge_base, 1}, ?MODULE, new_knowledge_base_predicate},
+    {{new_knowledge_base, 2}, ?MODULE, new_knowledge_base_predicate},
+    {{wait_for, 2}, ?MODULE, wait_for_predicate}]).
 
 %==============================================================================
 % Exports
@@ -33,29 +35,52 @@
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
-%% Return the list of built in predicates contained in this module
-%%
+%% Return the list of built in predicates contained in this module.
 %% @end
 %%------------------------------------------------------------------------------
 
 external_predicates() ->
-    ?ERLANG_PREDS.
+  ?ERLANG_PREDS.
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @private
+%% Predicate creating a new 'empty' Kb ready for use.
+%% It's not really empty as basic predicates like assert are included.
+%% @end
+%%------------------------------------------------------------------------------
 
 new_knowledge_base_predicate({_Atom, NameSpace}, Next0, #est{} = St) ->
-    AgentName = get(agent_name),
-    case bbs_ontology:create_kb_store(NameSpace, AgentName, bbs_db_ets) of
-        {ok, Est} ->
-            case bbs_agent:store_ontology_state_on_namespace(NameSpace, Est) of
-                undefined ->
-                    ?INFO_MSG("Crreated kb :~p", [NameSpace]),
-                    erlog_int:prove_body(Next0, St);
-                _ ->
-                    %% an kb with same namespace already exists
-                    erlog_int:fail(St)
-            end;
-        {error, _Reason} ->
-            erlog_int:fail(St)
-    end.
+  AgentName = get(agent_name),
+  case bbs_ontology:create_kb_store(NameSpace, AgentName, bbs_db_ets) of
+    {ok, Est} ->
+      case bbs_agent:store_ontology_state_on_namespace(NameSpace, Est) of
+        undefined ->
+          ?INFO_MSG("Crreated kb :~p", [NameSpace]),
+          erlog_int:prove_body(Next0, St);
+        _ ->
+          %% an kb with same namespace already exists
+          erlog_int:fail(St)
+      end;
+    {error, _Reason} ->
+      erlog_int:fail(St)
+  end;
+
+new_knowledge_base_predicate({_Atom, NameSpace, Db_mod}, Next0, #est{} = St) ->
+  AgentName = get(agent_name),
+  case bbs_ontology:create_kb_store(NameSpace, AgentName, Db_mod) of
+    {ok, Est} ->
+      case bbs_agent:store_ontology_state_on_namespace(NameSpace, Est) of
+        undefined ->
+          ?INFO_MSG("Crreated kb :~p", [NameSpace]),
+          erlog_int:prove_body(Next0, St);
+        _ ->
+          %% an kb with same namespace already exists
+          erlog_int:fail(St)
+      end;
+    {error, _Reason} ->
+      erlog_int:fail(St)
+  end.
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -64,24 +89,24 @@ new_knowledge_base_predicate({_Atom, NameSpace}, Next0, #est{} = St) ->
 %%------------------------------------------------------------------------------
 
 wait_for_predicate({_Atom, NameSpace, PredicatePattern}, Next0, #est{bs = Bs} = St) ->
-    %TODO: Manage backtracking
-    DDPredPat = erlog_int:dderef(PredicatePattern, Bs),
-    ?INFO_MSG("waiting  for ~p:~p", [NameSpace, DDPredPat]),
-    case bbs_agent:get_ontology_state_from_namespace(<<"bbs:agent:stims">>) of
-        #est{} = StimsKbState ->
-            case erlog_int:assertz_clause({':-',
-                                           {stim, NameSpace, DDPredPat},
-                                           {restore_state, term_to_binary({Next0, St})}},
-                                          StimsKbState#est.db)
-            of
-                #db{} ->
-                    {{paused, NameSpace, DDPredPat}, Next0, St};
-                _ ->
-                    erlog_int:fail(St)
-            end;
+  %TODO: Manage backtracking
+  DDPredPat = erlog_int:dderef(PredicatePattern, Bs),
+  ?INFO_MSG("waiting  for ~p:~p", [NameSpace, DDPredPat]),
+  case bbs_agent:get_ontology_state_from_namespace(<<"bbs:agent:stims">>) of
+    #est{} = StimsKbState ->
+      case erlog_int:assertz_clause({':-',
+        {stim, NameSpace, DDPredPat},
+        {restore_state, term_to_binary({Next0, St})}},
+        StimsKbState#est.db)
+      of
+        #db{} ->
+          {{paused, NameSpace, DDPredPat}, Next0, St};
         _ ->
-            erlog_int:fail(St)
-    end.
+          erlog_int:fail(St)
+      end;
+    _ ->
+      erlog_int:fail(St)
+  end.
 
 %-------------------------------------------------------------------------------
 %  Utilities

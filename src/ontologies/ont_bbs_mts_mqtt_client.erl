@@ -13,30 +13,66 @@
 -include("utils.hrl").
 
 -include_lib("erlog/include/erlog_int.hrl").
-
+-include_lib("emqx/include/emqx.hrl").
 %% Prolog API
 
 -define(ERLANG_PREDS, [
-  {{subscribe, 1}, ?MODULE, subscribe_predicate}
+  {{new_cc, 2}, ?MODULE, subscribe_predicate},
+  {{mqtt_send_predicate, 4}, ?MODULE, mqtt_send_predicate}
 ]).
 
 %% API
 -export([external_predicates/0]).
--export([subscribe_predicate/3]).
+-export([new_cc/3, mqtt_send_predicate/3]).
 
 external_predicates() ->
   ?ERLANG_PREDS.
 
+%%------------------------------------------------------------------------------
+%% @doc
+%% @private
+%% Subscribe Agent to topic AgenName/AccName/Ontology<
+%% If CcName is not binded, it will be binded to a uuid4
+%% @end
+%%------------------------------------------------------------------------------
 
-subscribe_predicate({_, Topic}, Next0, #est{bs=Bs} = St) ->
-  case erlog_int:dderef(Topic, Bs) of
-    {_} ->
-      %% TODO manage unbinded Topic
-      erlog_int:fail(st);
-    Topic when is_binary(Topic) ->
-      emqx:subscribe(Topic),
-      erlog_int:prove_body(Next0,St)
+
+new_cc({_, CcName, Ontology}, Next0, #est{bs = Bs} = St) ->
+  BCcName = erlog_int:dderef(CcName, Bs),
+  COnt = erlog_int:dderef(Ontology, Bs),
+  process_new_cc(BCcName, COnt, Next0, St).
+
+process_new_cc({_} = VarCc, Bontology, Next0, St) ->
+  Me = get(agent_name),
+  CCName = zuuid:v4(),
+  case Bontology of
+    OntName when is_binary(OntName) ->
+      emqx:subscribe(iolist_to_binary([Me, <<"/">>, CCName, <<"/">>, OntName])),
+      erlog_int:unify_prove_body(VarCc, CCName, Next0, St);
+    _ ->
+      erlog_int:fail(St)
   end.
 
-%send_message({_, Destination, Acc, Ontology, Predicate})
-%  Topic =
+%%------------------------------------------------------------------------------
+%% @doc
+%% @private
+%% Send provided mqtt message on provided topic
+%%
+%% @end
+%%------------------------------------------------------------------------------
+
+mqtt_send_predicate({_, CcId, To, Onto, Predicate}, Next0, #est{bs = Bs} = St) ->
+  DCCiD = erlog_int:dderef(CcId, Bs),
+  DTo = erlog_int:dderef(To, Bs),
+  DOnto = erlog_int:dderef(Onto, Bs),
+  DPred = erlog_int:dderef(Predicate, Bs),
+  case do_mqtt_send(DCCiD, DTo, DOnto, DPred) of
+    ok -> erlog_int:prove_body(Next0, St);
+    _ -> erlog_int:fail(St)
+  end.
+
+do_mqtt_send(Topic, To, Onto, Predicate) ->
+  Me = get(agent_name),
+  emqx:publish(#message{topic = Topic, from = Me, payload = {message, To, Onto, Predicate}}).
+
+  

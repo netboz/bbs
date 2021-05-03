@@ -1,61 +1,105 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%% Initialisation
+
 %% @doc: initialized(+Ns, +Ag, +Params)
 %% Initialize this ontology
 
-action(initialize(Ns, Ag, Params), [
-    new_knowledge_base("bbs:agent:event_handlers")
-    ], initialized(Ns, Ag, Params)).
+action(initialize(Ns, Ag, Params), [], initialized(Ns, Ag, Params)).
 
 initialize(AgentId, Namespace, Params) :-
     log(info,"Waking up agent :~p",[AgentId]),
+     new_knowledge_base("bbs:agent:event_handlers"),
+     new_knowledge_base("bbs:agent:stims"),
+     new_knowledge_base("bbs:agent:ccs", erlog_db_dict),
+     assert(me(AgentId)),
+
     assert(initialized(Ns, Ag, Params)).
 
-action(boot(Ns, Ag, Params), [], booted(Ns, Ag, Params)).
-
-boot(Ns, Ag, Params) :-
-    assert(booted(Ns, Ag, Params)).
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% gen fsm events related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @doc: agent_event_processed(+Type, +Message)
 %% execute all stored reactions liked to erlang fsm event ( ex cast, call, info ) with pattern Message
+%% +Type match erlang fsm event type like this :
+%% call -> sync_event
+%% cast -> async_event
+%% info -> info_event
 
-action(process_agent_event(Type, Message), [], agent_event_processed(Type, Message)).
+action(process_agent_event(Type, Message), [log(info,"Processing event : ~p",[{Type, Message}])], agent_event_processed(Type, Message)).
 
 %% @doc: process_agent_events(+Type, +Message)
 %% Effectively execute stims and delete needed ones
 
-process_agent_events(Type, Message) :-
-    \+process_events(Type, Message).
+process_agent_event(Type, Message) :-
+    \+do_process_agent_event(Type, Message).
 
-process_events(Type, Message) :-
-    Head = event(type, Message, Options),
-    "bbs:agent:events"::clause(Head, Body),
-    "bbs:agent:events"::Head,
+do_process_agent_event(Type, Message) :-
+    Head = event(Type, Message, Options),
+    "bbs:agent:event_handlers"::clause(Head, Body),
+    "bbs:agent:event_handlers"::Head,
     member(once, Options),
-    "bbs:agent:events"::retract(( Head :- Body )),
+    "bbs:agent:event_handlers"::retract(( Head :- Body )),
     fail.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% gen fsm events related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%% @doc: Set a callback to gen_fsm events.
+%% @doc: react_on(+Event_type, +Event_patten, +Ontology_reaction, +Predicate)
 %% Set a hook to gen_fsm:handle(Type, Event_patten, _State) that prove Ontology_reaction:Predicate
 %% Type can be one of sync_event, async_event, info_event, to avoid collision with erlog 'call' predicate
 
 react_on(Event_type, Event_patten, Ontology_reaction, Predicate) :-
-    react_on(Event_patten, Ontology_reaction, Predicate, []).
+    react_on(Event_type, Event_patten, Ontology_reaction, Predicate, []).
 
 react_on(Event_type, Event_patten, Ontology_reaction, Predicate, Options) :-
     "bbs:agent:event_handlers"::assert(( event(Event_type, Event_patten, Options) :-
     Ontology_reaction::Predicate )).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Message sending predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Stims related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @doc: react_on_stim(+Event_type, +Event_patten, +Ontology_reaction, +Predicate)
+%% Set an Ontology::predicate to be called when stim StimOnt::StimPred is triggered
+
+react_on_stim(StimOnt, StimPredicate, ReactionOnt, ReactionPredicate) :-
+    react_on(StimOnt, StimPredicate, ReactionOnt, ReactionPredicate, []).
+
+react_on_stim(StimOnt, StimPredicate, ReactionOnt, ReactionPredicate, Options) :-
+    "bbs:agent:stims"::assert(( stim(StimPredicate, StimPredicate, Options) :-
+    ReactionOnt::ReactionPredicate )).
+
+%% @doc: stim_processed(+StimOnt, +StimMessage)
+%% execute all stored reactions liked to StimOnt::StimMessage
+
+action(process_stim(StimOnt, StimMessage), [log(info,"Processing stim",[])], stim_processed(StimOnt, StimMessage)).
+
+%% @doc: process_stim(+StimOnt, +StimMessage)
+%% Effectively execute stim reactions and those that needs to be.
+
+process_stim(StimOnt, StimMessage) :-
+    \+do_process_stim(StimOnt, StimMessage).
+
+do_process_stim(StimOnt, StimMessage) :-
+    Head = stim(StimOnt, StimMessage, Options),
+    "bbs:agent:stims"::clause(Head, Body),
+    "bbs:agent:stims"::Head,
+    member(once, Options),
+    "bbs:agent:stims"::retract(( Head :- Body )),
+    fail.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-action(Transport_Ontology::send_message(Dest, Acc, Onto, Message),
-         [message_transport_ontology(Transport_Ontology)],
-            sent(Dest, Acc, Onto, Message)).
+action(process_incoming_message(Com_Channel, From, To, Ontology, Predicate),[me(To)],
+    incoming_message_processed(Com_Channel, message(From, To, Ontology, Predicate))).
+
+%action(process_incoming_message(Com_Channel, From, To, Ontology, Predicate),[message_transport_ontology(Transport), cc(CcId, To)],
+%    incoming_message_processed(Com_Channel, message(From, To, Ontology, Predicate))).
+
+action(Transport_Ontology::goal(sent_message(CcId, message(To, Ontology, Predicate))),
+         [message_transport_ontology(Transport_Ontology), Transport_Ontology::cc(To, CcId, Ontology)],
+            sent(CcIc, message(To, Ontology, Predicate))).
+
+process_incoming_message(Cc, From, To, Ontology, Predicate) :-
+    log(info,"Processing message :~p", [Predicate]),
+    trigger_stims("bbs:agent", incoming_message(Cc, message(From, To, Ontology, Predicate))).
 
 
 
