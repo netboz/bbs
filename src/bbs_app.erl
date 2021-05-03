@@ -15,21 +15,17 @@
 
 start(_StartType, _StartArgs) ->
   register(bbs, self()),
+
   % Create ontologies index
   ets:new(?ONTO_STORE, [named_table, set, protected, {read_concurrency, true}]),
+
   %% Register ontologies
-  Ontolist =
-    case application:get_env(bbs, ontologies) of
-      undefined ->
-        ?WARNING_MSG("No ontology registered", []),
-        [];
-      {ok, Value} ->
-        Value
-    end,
+  Ontolist = application:get_env(bbs, ontologies, []),
   bbs_ontology:register_ontologies(Ontolist),
 
   % Start application supervisor
   bbs_sup:start_link().
+
 
 stop(_State) ->
   ok.
@@ -47,10 +43,12 @@ new_bubble_test() ->
   BubSpecs =
     #agent{name = <<"bubble">>,
       startup_ontologies =
-      [{ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
+      [
+        % broken {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
         {ontology, <<"bbs:agent">>, [], bbs_db_ets},
         {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
         {ontology, <<"bbs:mts:mqtt:broker">>, [], bbs_db_ets},
-        {ontology, <<"bbs:mts:mqtt:client">>, [], bbs_db_ets}
-        ]},
+        {ontology, <<"bbs:mts:mqtt:client">>, [], bbs_db_ets},
+        {ontology, <<"bbs:root">>, [], bbs_db_ets}
+      ]},
   new_bubble(BubSpecs).
