@@ -62,10 +62,10 @@ init(AgentSpecs) ->
                 zuuid:binary(
                     zuuid:v4())
         end,
-    %% We store agent name in process dictionnary for easy retrieval during predicate prooving process
+    %% We store agent name in process dictionary for easy retrieval during predicate proving process
     put(agent_name, AgentName),
 
-    %% Finish init and start ontologies initialisation
+  %% Finish init and start ontologies initialisation
     {ok,
      ontologies_init,
      #state{onto_dict = dict:new(), uuid = AgentName},
@@ -98,31 +98,31 @@ ontologies_init(cast,
         {error, OntoBuildError} ->
             ?ERROR_MSG("~p Failled to initialize ontology :~p with error: ~p",
                        [State#state.uuid, Ns, OntoBuildError]),
-            {next_state,
-             ontologies_init,
-             State#state{onto_to_init = NextOntos},
-             [{next_event, cast, {init_next, NextOntos}}]};
+            {stop,
+              {ontologies_creation_failled, Ns, OntoBuildError},
+             State};
         {ok, {_Tid, Kb}} ->
             ?INFO_MSG("Builded Knowledge Base for :~p", [Ns]),
-            %% Set the prolog engine to not crash when a predicate isn't found
+            %% Set the prolog engine to not crash when a predicate isn't found. TODO : Guess this should be done earlier
             {succeed, KbReady} = erlog_int:prove_goal({set_prolog_flag, unknown, fail}, Kb),
-            %% Store unitialized ontology state into process state
-            undefined = store_ontology_state_on_namespace(Ns, KbReady),
 
             case erlog_int:prove_goal({goal, {initialized, State#state.uuid, Ns, Params}}, KbReady)
             of
                 {succeed, _InitializedOntoState} ->
                     %% Register the raw kb state into process stack under key Namespace
-                    ok;
-                {{paused, _Nanmespace, _Predicate}, _Next0, St} ->
-                    ok;
+                  undefined = store_ontology_state_on_namespace(Ns, KbReady),
+                  {next_state, ontologies_init, State, [{next_event, cast, {init_next, NextOntos}}]};
                 {fail, FStatr} ->
                     ?ERROR_MSG("Ontology initialisation failed :~p with state: ~p", [Ns, FStatr]),
-                    {error, preinit_failled};
+                  {stop,
+                    {ontologies_initialisation_failed, Ns},
+                    State};
                 Else ->
-                    ?ERROR_MSG("Ontology unexpected result :~p", [Else])
-            end,
-            {next_state, ontologies_init, State, [{next_event, cast, {init_next, NextOntos}}]}
+                    ?ERROR_MSG("Ontology unexpected result :~p", [Else]),
+                  {stop,
+                    {ontologies_initialisation_failed, Ns},
+                    State}
+            end
     end;
 ontologies_init(cast, Else, State) ->
     ?WARNING_MSG("Unmanaged message in ontologies_init :~p  agent ~p",
@@ -249,9 +249,4 @@ store_ontology_state_on_namespace(Ns, KbDb) ->
 %%------------------------------------------------------------------------------
 
 trigger_agent_reactions(Type, Message) ->
-  case bbs_agent:get_ontology_state_from_namespace(<<"bbs:agent:events">>) of
-    #est{} = State ->
-      _ = prove({goal, {agent_event_processed, Type, Message}}, State);
-    undefined ->
-      ok
-  end.
+  _ = prove(<<"bbs:agent">>, {goal, {agent_event_processed, Type, Message}}).
