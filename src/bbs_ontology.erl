@@ -510,6 +510,7 @@ prove(NameSpace, Predicate) when is_binary(NameSpace) ->
     #est{} = Kb ->
       prove(Kb, Predicate);
     undefined ->
+      ?WARNING_MSG("No kb :~p", [{NameSpace, Predicate}]),
       fail
   end;
 prove(Kb, Predicate) ->
