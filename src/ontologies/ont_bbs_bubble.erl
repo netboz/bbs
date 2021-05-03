@@ -51,11 +51,7 @@ spawn_child({_Atom, {agent, Name, Onts}, PidBack}, Next0, #est{} = St) ->
 stop_child({_Atom, Pid}, Next0, #est{} = St) ->
     case erlang:is_process_alive(Pid) of
         true ->
-            ?DEBUG("before exit", []),
-
             exit(Pid, normal),
-            ?DEBUG("after exit", []),
-
             erlog_int:prove_body(Next0, St);
         _ ->
             erlog_int:fail(St)
