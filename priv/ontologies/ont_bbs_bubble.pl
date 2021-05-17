@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 action(initialize(Ns, Ag, Params), [child("test_bob",[]),
-    "bbs:agent"::react_on(info_event, 'EXIT'(Pid, Reason), "bbs:bubble", signal_process_exit(Pid, Reason),[once]),
+    "bbs:agent"::react_on(info_event, 'EXIT'(Pid, Reason), "bbs:bubble", signal_process_exit(Pid, Reason),[]),
     stopped("test_bob")], initialized(Ns, Ag, Params)).
 
 initialize(AgentId, Namespace, Params) :-
