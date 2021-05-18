@@ -18,18 +18,16 @@ A multi-agents asynchronous simulation system
 - Agents are Bubbles
 
 
-- The root bubble is called the mother bubble.
-
 ## Application start
 
 ###1 System ontologies registration
 
-The goal of the application starting process is to have the mother bubble running. 
+The goal of the application starting process is to have the root bubble running. 
 
-The mother bubble will spawn some agents/bubbles, who may themselves spawn some other agents/bubbles
+The root bubble will spawn some agents/bubbles, who may themselves spawn some other agents/bubbles
 leading to a bubble tree architecture.
 
-For the mother bubble to be able to spawn childs, and also for the bubbles to be a pleasant place to live for agents
+For the root bubble to be able to spawn childs, and also for the bubbles to be a pleasant place to live for agents
 a set of system services needs to be provided ( messaging, ontology manipulation, etc).
 
 These services are the ```System Ontologies``` and are written partly in Prolog, partly in Erlang for the side effects.
@@ -76,11 +74,11 @@ The format is :
 
 These will then be available to the Mother bubble and its children.
 
-###2 Mother bubble startup
+###2 Root bubble startup
 
-To complete application startup, the mother bubble is started.
+To complete application startup, the root bubble is started.
 
-In details, this means the mother bubble agent will spawned. It will then initialize a defined set of ontologies among 
+In details, this means the root bubble agent will be spawned. It will then initialize a defined set of ontologies among 
 the ones registered in previous steps.
 
 This starting process is the same for all agents running on the platform.
@@ -109,11 +107,22 @@ Where each entry is :
 ```
 
 
+## Messaging
 
+### Introduction
 
+Agents can exchange messages between themselves, and with the world external to their bubble ( other bubbles, mqtt clients).
 
+```"bbs:agent"``` ontology contains the needed predicate to send and receive messages.
 
+The predicates in ```bbs:agent``` ontology are relying on some subservice ontologies to perform message transport. 
+These transport ontologies are registered under ```"bbs:agent:mts:client``` namespace.
 
+### Messaging with "bbs:agent"
+
+#### Receiving messages
+
+To reaceive messages an agent needs to create a ```communication channel```
 
 
 
