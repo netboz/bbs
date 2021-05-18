@@ -57,7 +57,8 @@ init([]) ->
 
 default_root_bubble_ontologies() ->
   [
-    % broken {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
+    {ontology, <<"bbs:brain_tests:data">>, [], bbs_db_ets},
+    {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
     {ontology, <<"bbs:agent">>, [], bbs_db_ets},
     {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
     {ontology, <<"bbs:mts:mqtt:broker">>, [], bbs_db_ets},
