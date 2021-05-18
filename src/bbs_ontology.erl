@@ -23,14 +23,15 @@
 -export([get_registered_ont_desc/1, register_ontologies/1, create_kb_store/3,
   build_ontology/3]).
 % Built in predicates
--export([lager_predicate/3, prove_external_ontology_predicate/3]).
+-export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3]).
 % Utilities
 -export([prove/2, string_to_eterm/1, put_onto_hooks/3]).
 
 %% Built-in (erlang) Predicates included into all ontologies that will be registered
 -define(COMMON_BUILD_IN_PREDS,
   [{{log, 3}, ?MODULE, lager_predicate},
-    {{'::', 2}, ?MODULE, prove_external_ontology_predicate}]).
+    {{'::', 2}, ?MODULE, prove_external_ontology_predicate},
+    {{type_of, 2}, ?MODULE, type_of_predicate}]).
 %% Predicates included into all ontologies that will be registered
 -define(COMMON_PROLOG_PREDS, [{file, "common_predicates.pl"}]).
 
@@ -347,16 +348,16 @@ load_ontology_built_in_predicate(OntMod, Kb) when is_atom(OntMod) ->
 %% @end
 %%------------------------------------------------------------------------------
 
-lager_predicate({_Atom, Type, Label, Arguments}, Next0, #est{} = St) ->
+lager_predicate({_Atom, Type, Label, Arguments}, Next0, #est{bs = Bs} = St) ->
   case Type of
     info ->
-      ?INFO_MSG(Label, Arguments);
+      ?INFO_MSG(Label, erlog_int:dderef(Arguments, Bs));
     debug ->
-      ?DEBUG(Label, Arguments);
+      ?DEBUG(Label, erlog_int:dderef(Arguments, Bs));
     error ->
-      ?ERROR_MSG(Label, Arguments);
+      ?ERROR_MSG(Label, erlog_int:dderef(Arguments, Bs));
     warning ->
-      ?WARNING_MSG(Label, Arguments);
+      ?WARNING_MSG(Label, erlog_int:dderef(Arguments, Bs));
     _ ->
       ?ERROR_MSG("Unrecognized log level.", [])
   end,
@@ -378,15 +379,15 @@ prove_external_ontology_predicate({_Atom,
       cps = ParentCps,
       vn = ParentVn} =
       ParentOntologyState) ->
+
   DDExternalOntNs = erlog_int:dderef(ExternalOntologyNameSpace, ParentBindings),
-  %%?INFO_MSG("Proving external predicate : ~p::~p",[ExternalOntologyNameSpace, ExternalOntologyPredicate]),
   case bbs_agent:get_ontology_state_from_namespace(DDExternalOntNs) of
     #est{} = ExternalOntologyState ->
       DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
-      case erlog_int:prove_body([DDExternalPredicate],
-        ExternalOntologyState#est{bs = erlog_int:new_bindings()})
+      case erlog_int:prove_goal(DDExternalPredicate, [],
+        ExternalOntologyState#est{bs = erlog_int:new_bindings(), vn = ParentVn })
       of
-        {succeed, NewExternalState} ->
+        {succeed, #est{vn = NewVn} = NewExternalState} ->
           DDResultPredicate =
             erlog_int:dderef(DDExternalPredicate, NewExternalState#est.bs),
           {succeed, NewBindings} =
@@ -404,15 +405,16 @@ prove_external_ontology_predicate({_Atom,
           Cp = #cp{type = compiled,
             data = FailFun,
             next = Next0,
-            bs = NewBindings,
+            bs = ParentBindings,
             vn = ParentVn},
+
           erlog_int:prove_body(Next0,
             ParentOntologyState#est{cps = [Cp | ParentCps],
-              bs = NewBindings});
-        fail ->
-          ?INFO_MSG("Failled external predicate : ~p", [ExternalOntologyPredicate]),
+              bs = NewBindings, vn = NewVn});
+        {fail, #est{} = _NewExternalState} ->
           erlog_int:fail(ParentOntologyState);
         OtherResult ->
+          ?INFO_MSG("Unexpected result : ~p", [OtherResult]),
           %% Any other result stops the current proof. This permits 'paused' predicate to stop the execution.
           OtherResult
       end;
@@ -424,7 +426,7 @@ prove_external_ontology_predicate({_Atom,
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
-%% Prove predicate onto Namespace ontology
+%% fail function to backtrack '::'
 %%
 %% @end
 %%------------------------------------------------------------------------------
@@ -434,16 +436,55 @@ fail_external_predicate({_LCp, _LCps, _Lst},
     ParentOntologyState,
     ExternalPredicate,
     ExternalState) ->
-  %?INFO_MSG("Failling :~p   ~p    ~p",[{LCp, LCps, Lst}, Next0, ParentOntologyState]),
+  %?INFO_MSG("Failling :~p~n   ~p~n    ~p  ~p   ~p",[_LCp, _LCps, _Lst, Next0, ParentOntologyState]),
   case erlog_int:fail(ExternalState) of
-    {succeed, NewExternalState} ->
+    {succeed, #est{vn = NewVn} =NewExternalState} ->
       DDResultPredicate = erlog_int:dderef(ExternalPredicate, NewExternalState#est.bs),
       {succeed, NewBindings} =
         erlog_int:unify(DDResultPredicate, ExternalPredicate, ParentOntologyState#est.bs),
-      erlog_int:prove_body(Next0, ParentOntologyState#est{bs = NewBindings});
+      erlog_int:prove_body(Next0, ParentOntologyState#est{bs = NewBindings, vn = NewVn});
     {fail, #est{}} ->
       erlog_int:fail(ParentOntologyState)
   end.
+
+
+%%------------------------------------------------------------------------------
+%% @doc
+%% @private
+%% Predicate used to get type of a term.
+%%
+%% @end
+%%------------------------------------------------------------------------------
+
+
+type_of_predicate({_Atom, Term, Type}, Next0, #est{bs = Bs} = St) ->
+  type_of_predicate_deref(erlog_int:dderef(Term, St#est.bs), Type, Next0, St).
+
+type_of_predicate_deref({'_'}, Type, Next0, #est{bs = Bs} = St) ->
+  erlog_int:unify_prove_body(unbinded, Type, Next0, St);
+
+type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_binary(Term)->
+  erlog_int:unify_prove_body(string, Type, Next0, St);
+
+type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_tuple(Term)->
+  erlog_int:unify_prove_body(predicate, Type, Next0, St);
+
+type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_number(Term)->
+  erlog_int:unify_prove_body(number, Type, Next0, St);
+
+type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_list(Term)->
+  erlog_int:unify_prove_body(list, Type, Next0, St);
+
+type_of_predicate_deref(_, Type, Next0, #est{} = St) ->
+  erlog_int:unify_prove_body(unknown_type, Type, Next0, St).
+
+
+
+
+
+
+
+
 
 %-------------------------------------------------------------------------------
 %  Utilities
