@@ -249,4 +249,11 @@ store_ontology_state_on_namespace(Ns, KbDb) ->
 %%------------------------------------------------------------------------------
 
 trigger_agent_reactions(Type, Message) ->
-  _ = prove(<<"bbs:agent">>, {goal, {agent_event_processed, Type, Message}}).
+  prove(<<"bbs:agent">>, {goal, {agent_event_processed, Type, Message}}).
+
+
+prologize(Term, Bs) ->
+  prologize(Term, Bs, <<"">>).
+
+prologize(Atom, Bs, Acc) when is_atom(Atom) ->
+  atom_to_binary(Atom, utf8).
