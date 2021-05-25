@@ -117,12 +117,12 @@ the categories, properties and relations between the concepts, data and entities
 domains of discourse.
 ```
 
-Our use of this term might be slighly pretencious, but this is what we are aiming to.
+Considering this defintion, our use of thr term 'Ontology' might be slighly pretencious, but this is what we are aiming to.
 
 To make it simple, in BBS, an ontology holds knowledge : Knowdledge of swamp flowers, knowledge about how to walk on two feet, 
 knowledge on how to send an http REST request...
 
-The agents can use these ontologies to perform tasks, answer questions about this ontologic domain.
+The agents can use these ontologies to perform tasks, answer questions related to a domain.
 
 In BBS, ontologies are written mainly in Prolog ( and erlang, for some low level system predicates )
 
@@ -157,9 +157,19 @@ mqtt clients, http clients...).
 ```"bbs:agent"``` ontology contains the needed predicates to send and receive messages.
 
 The predicates in ```bbs:agent``` ontology are relying on some subservice ontologies to perform message transport. 
-These transport ontologies are registered under ```"bbs:agent:mts:client``` namespace.
+These transport ontologies are registered under ```"bbs:agent:mts``` namespace (ex : ```"bbs:agent:mts:mqtt:client"```).
 
 ### Messaging with "bbs:agent"
+
+#### sending messages
+
+Sending messages is made using the predicate :
+
+```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, Message))```.
+
+Where Message is :
+
+```message(To, Ontology, Predicate)```
 
 #### Receiving messages
 
