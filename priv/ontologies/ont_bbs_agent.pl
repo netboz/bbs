@@ -11,10 +11,9 @@ initialize(AgentId, Namespace, Params) :-
     log(info,"Waking up agent :~p",[AgentId]),
      new_knowledge_base("bbs:agent:event_handlers"),
      new_knowledge_base("bbs:agent:stims"),
-     new_knowledge_base("bbs:agent:ccs", erlog_db_dict),
+     new_knowledge_base("bbs:agent:ccs"),
      assert(me(AgentId)),
-
-    assert(initialized(Ns, Ag, Params)).
+     assert(initialized(Ns, Ag, Params)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% gen fsm events related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -72,45 +71,45 @@ react_on_stim(StimOnt, StimPredicate, ReactionOnt, ReactionPredicate, Options) :
 %% @doc: stim_processed(+StimOnt, +StimMessage)
 %% execute all stored reactions liked to StimOnt::StimMessage
 
-action(process_stim(StimOnt, StimMessage), [log(info,"Processing stim :~p",[StimMessage])], stim_processed(StimOnt, StimMessage)).
+action(process_stim(StimOnt, StimMessage),
+    [log(info,"Processing stim : ~p ~p",[StimOnt, StimMessage])],
+        stim_processed(StimOnt, StimMessage)).
 
 %% @doc: process_stim(+StimOnt, +StimMessage)
 %% Effectively execute stim reactions and those that needs to be.
 
 process_stim(StimOnt, StimMessage) :-
-                              \+do_process_stim(StimOnt, StimMessage).
-
-
+    \+do_process_stim(StimOnt, StimMessage).
 
 do_process_stim(StimOnt, StimMessage) :-
     Head = stim(StimOnt, StimMessage, Options),
-              log(info, "Head : ~p", [Head]),
-
     "bbs:agent:stims"::clause(Head, Body),
-
     cutted_goal("bbs:agent:stims"::Head),
-                      log(info, "checing option ", []),
-
     member(once, Options),
-                          log(info, "retracting option ", []),
-
     "bbs:agent:stims"::retract(( Head :- Body )),
     fail.
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-action(process_incoming_message(Com_Channel, From, To, Ontology, Predicate),[],
-    incoming_message_processed(Com_Channel, From, To, Ontology, Predicate)).
+action(process_incoming_message(Com_Channel, From, To, Ontology, Predicate),
+    [],
+        incoming_message_processed(Com_Channel, From, To, Ontology, Predicate)).
 
 process_incoming_message(Cc, From, To, Ontology, Predicate) :-
     goal(stim_processed("bbs:agent", message(Cc, From, To, Ontology, Predicate))).
 
-action(Transport_Ontology::goal(sent_message(CcId, message(To, Ontology, Predicate))),
-         [message_transport_ontology(Transport_Ontology), Transport_Ontology::cc(To, CcId, Ontology)],
-            sent(CcIc, message(To, Ontology, Predicate))).
+action(Transport_Ontology::goal(sent(CcId, Predicate)),
+    [cc(Transport_Ontology, CcId, To, Ontology)],
+        sent(CcIc, To, Ontology, Predicate)).
 
+action(Transport_Ontology::goal(cc(CcId, Ontology)),
+    [message_transport_ontology(Transport_Ontology)],
+        cc(Transport_Ontology, CcId, Ontology)).
 
+cc(Transport_Ontology, CcId, Ontology) :-
+    me(Me),
+    cc(Transport_Ontology, CcId, Me, Ontology).
+
+cc(Transport_Ontology, CcId, To, Ontology) :-
+    "bbs:agent:ccs"::cc(Transport_Ontology, CcId, To, Ontology).

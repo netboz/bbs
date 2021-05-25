@@ -18,12 +18,13 @@
 
 -define(ERLANG_PREDS, [
   {{new_cc, 2}, ?MODULE, new_cc_predicate},
-  {{mqtt_send, 4}, ?MODULE, mqtt_send_predicate}
+  {{mqtt_send, 4}, ?MODULE, mqtt_send_predicate},
+  {{topic_ccid, 2}, ?MODULE, topic_ccid_predicate}
 ]).
 
 %% API
 -export([external_predicates/0]).
--export([new_cc_predicate/3, mqtt_send_predicate/3]).
+-export([new_cc_predicate/3, mqtt_send_predicate/3, topic_ccid_predicate/3]).
 
 external_predicates() ->
   ?ERLANG_PREDS.
@@ -31,7 +32,7 @@ external_predicates() ->
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
-%% Subscribe Agent to topic AgenName/AccName/Ontology<
+%% Subscribe Agent to topic AgenName/AccName/Ontology
 %% If CcName is not binded, it will be binded to a uuid4
 %% @end
 %%------------------------------------------------------------------------------
@@ -67,24 +68,57 @@ process_new_cc(VarCc, Bontology, Next0, St) when is_binary(VarCc)->
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
-%% Send provided mqtt message on provided topic
+%% Send provided mqtt message on provided topic. Both needs to be binded.
 %%
 %% @end
 %%------------------------------------------------------------------------------
 
-mqtt_send_predicate({_, CcId, To, Onto, Predicate}, Next0, #est{bs = Bs} = St) ->
+mqtt_send_predicate({_, CcId, Predicate}, Next0, #est{bs = Bs} = St) ->
   DCCiD = erlog_int:dderef(CcId, Bs),
-  DTo = erlog_int:dderef(To, Bs),
-  DOnto = erlog_int:dderef(Onto, Bs),
   DPred = erlog_int:dderef(Predicate, Bs),
-  case do_mqtt_send(DCCiD, DTo, DOnto, DPred) of
+  case do_mqtt_send(DCCiD, DPred) of
     ok -> erlog_int:prove_body(Next0, St);
     _ -> erlog_int:fail(St)
   end.
 
-do_mqtt_send(Topic, To, Onto, Predicate) ->
+%% Can't post to an unbinded topic
+do_mqtt_send({_}, _Predicate) ->
+  fail;
+
+%% Can't send an undefined message ... for now
+do_mqtt_send(_, {_}) ->
+  fail;
+
+%% We can send the message
+do_mqtt_send(Topic, Predicate) ->
+  %% This is not super good. Ideally From should be fetched at a higher level querying "bbs:agent"::me(Me), but doing
+  %% this here permits so avoid client faking its From too easily
   Me = get(agent_name),
+  %% Let's send.
   emqx:publish(#message{topic = Topic, from = Me, payload = Predicate}),
   ok.
 
-  
+topic_ccid_predicate({_, Topic, CcId}, Next0, #est{bs = Bs} = St) ->
+  DCCiD = erlog_int:dderef(CcId, Bs),
+  DTopic = erlog_int:dderef(Topic, Bs),
+  do_topic_ccid(DTopic, DCCiD, Next0, St).
+
+do_topic_ccid({_}, {_}, _Next0, #est{} = St) ->
+  erlog_int:fail(St);
+
+do_topic_ccid({_}, CcId, _Next0, #est{} = St)  when is_binary(CcId) ->
+  erlog_int:fail(St);
+
+do_topic_ccid(Topic, {_} = CcId, Next0, #est{} = St)  when is_binary(Topic) ->
+  erlog_int:unify_prove_body(CcId, toptic2ccid(Topic), Next0, St);
+
+do_topic_ccid(Topic, CcId, Next0, #est{} = St) when is_binary(Topic) andalso is_binary(CcId)->
+  CcIdTopic = toptic2ccid(Topic),
+  case CcIdTopic of
+    CcId -> erlog_int:prove_body(Next0, Topic);
+    _ -> erlog_int:fail(St)
+  end.
+
+toptic2ccid(Topic) ->
+  Split = binary:split(Topic, <<"/">>, [global]),
+  lists:nth(2,Split).
