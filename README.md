@@ -59,7 +59,7 @@ They are defined in application ```app.config```
           {<<"bbs:brain_tests">>, [{file, "ont_bbs_brain_test.pl"}], []},
           {<<"bbs:agent">>, [{file, "ont_bbs_agent.pl"}], [ont_bbs_agent]},
           {<<"bbs:mts:mqtt:broker">>, [{file, "ont_bbs_mts_mqtt_broker.pl"}], [ont_bbs_mts_mqtt_broker]},
-          {<<"bbs:mts:mqtt:client">>, [{file, "ont_bbs_mts_mqtt_client.pl"}], [ont_bbs_mts_mqtt_client]}
+          {<<"bbs:mts:mqtt:client">>, [{file, "ont_bbs_mts_client_gproc.pl"}], [ont_bbs_mts_mqtt_client]}
         ]}
         ]
     }

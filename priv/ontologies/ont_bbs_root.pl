@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Initialisation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-action(initialize(Ns, Ag, Params), [], initialized(Ns, Ag, Params)).
+action(initialize(AgentId, Parent, NameSpace, Params), [], initialized(AgentId, Parent, NameSpace, Params)).
 
-initialize(AgentId, Namespace, Params) :-
-    assert(initialized(Ns, Ag, Params)).
+initialize(AAgentId, Parent, NameSpace, Params) :-
+    assert(initialized(AgentId, Parent, NameSpace, Params)).

@@ -23,7 +23,7 @@ initialize(AgentId, Namespace, Params) :-
 
 test_stim(Ontology, Predicate) :-
     log(info,"TESTINGT",[]),
-    Ontology::Predicate,
+    call(Predicate),
     log(info,"TESTINGT ",[]).
 
 
@@ -55,7 +55,7 @@ action("bbs:agent:ccs"::assert(cc("bbs:mts:mqtt:client", CcId, Me, Ontology)),
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% send a message %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-action(mqtt_send(CcId, Message), [], sent(CcId, Message)).
+action(mqtt_send(CcId, Message), [log(info,"SEning",[])], sent(CcId, Message)).
 
 
 

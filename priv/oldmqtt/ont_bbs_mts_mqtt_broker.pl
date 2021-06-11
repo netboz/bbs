@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 action(initialize(Ns, Ag, Params),
-    [start_mqtt_internal(StartResult), log(info,"Starting bubmqtt broker :~p",  [StartResult])],
+    ["bbs:agent":parent_bubble(ParentBubble), register_gproc(ParentBubble)],
         initialized(Ns, Ag, Params)).
 
 initialize(AgentId, Namespace, Params) :-

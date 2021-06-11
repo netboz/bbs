@@ -5,15 +5,18 @@
 %% @doc: initialized(+Ns, +Ag, +Params)
 %% Initialize this ontology
 
-action(initialize(Ns, Ag, Params), [], initialized(Ns, Ag, Params)).
+action(initialize(AgentId, Parent, NameSpace, Params), [], initialized(AgentId, Parent, NameSpace, Params)).
 
-initialize(AgentId, Namespace, Params) :-
+initialize(AgentId, Parent, NameSpace, Params) :-
     log(info,"Waking up agent :~p",[AgentId]),
      new_knowledge_base("bbs:agent:event_handlers"),
      new_knowledge_base("bbs:agent:stims"),
      new_knowledge_base("bbs:agent:ccs"),
      assert(me(AgentId)),
-     assert(initialized(Ns, Ag, Params)).
+     assert(parent(Parent)),
+     "bbs:agent:ccs"::assert(( cc("bbs:mts:client:gproc", CcId, To, Ontology, Parent) :-
+                                             "bbs:mts:client:gproc"::cc(CCId, To, Ontology, Parent))),
+     assert(initialized(AgentId, Parent, NameSpace, Params)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% gen fsm events related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -38,7 +41,6 @@ do_process_agent_event(Type, Message) :-
     cutted_goal("bbs:agent:event_handlers"::Head),
     member(once, Options),
     "bbs:agent:event_handlers"::retract(( Head :- Body )),
-    log(info,"FINISHED",[]),
     fail.
 
 cutted_goal(Goal) :-
@@ -100,8 +102,8 @@ process_incoming_message(Cc, From, To, Ontology, Predicate) :-
     goal(stim_processed("bbs:agent", message(Cc, From, To, Ontology, Predicate))).
 
 action(Transport_Ontology::goal(sent(CcId, Predicate)),
-    [cc(Transport_Ontology, CcId, To, Ontology)],
-        sent(CcIc, To, Ontology, Predicate)).
+    [log(info,"cC",[]), cc(Transport_Ontology, CcId, To, Parent, Ontology), log(info, "CC ~p", [Transport_Ontology])],
+        sent(CcIc, To, Parent, Ontology, Predicate)).
 
 action(Transport_Ontology::goal(cc(CcId, Ontology)),
     [message_transport_ontology(Transport_Ontology)],
@@ -109,7 +111,8 @@ action(Transport_Ontology::goal(cc(CcId, Ontology)),
 
 cc(Transport_Ontology, CcId, Ontology) :-
     me(Me),
-    cc(Transport_Ontology, CcId, Me, Ontology).
+    parent(Parent),
+    cc(Transport_Ontology, CcId, Me, Parent, Ontology).
 
-cc(Transport_Ontology, CcId, To, Ontology) :-
-    "bbs:agent:ccs"::cc(Transport_Ontology, CcId, To, Ontology).
+cc(Transport_Ontology, CcId, To, Parent, Ontology) :-
+    "bbs:agent:ccs"::cc(Transport_Ontology, CcId, To, Parent, Ontology).

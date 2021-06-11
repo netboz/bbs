@@ -4,7 +4,7 @@
   {vsn, "0.1.0"},
   {registered, []},
   {mod, {bbs_app, []}},
-  {applications, [kernel, stdlib, sasl, lager, uuid, grpcbox, erlog]},
+  {applications, [kernel, stdlib, sasl, lager, erlog, zuuid, swarm, gproc]},
   {env, []},
   {modules, []},
   {licenses, ["Apache 2.0"]},
