@@ -194,10 +194,14 @@ action(Transition_Predicate_1, [List_of_prequesites_or_original_states_for_Trans
 action(Transisition_Predicate_2,[List_of_prequesites_or_original_states_for_Transition_predicate_2], FinalState).
 ````
 
-They are used by being given as goal to agents :
+Actions are used in conjonction with ```goal/1``` predicate. ```Goal``` predicate will try to match its single parameter \
+with one of the final state defined among the actions of the current ontology.
 
 ```goal(FinalState)```
 
+ex:
+
+```goal(empty(bottle_of_jenlin))```
 
 ## Messaging
 
@@ -208,20 +212,29 @@ mqtt clients, http clients...).
 
 ```"bbs:agent"``` ontology contains the needed predicates to send and receive messages.
 
-The predicates in ```bbs:agent``` ontology are relying on some sub-ontologies to perform message transport. 
+Note. The action predicates in ```bbs:agent``` ontology are relying on some sub-ontologies to perform message transport. 
 These transport ontologies are registered under ```"bbs:mts``` namespace (ex : ```"bbs:mts:client:mqtt"```).
 
 ### Messaging with "bbs:agent"
 
 #### sending messages
 
-Sending messages is made using the predicate :
+Sending messages is made using the ```message_sent/4``` action predicate :
+
+Ex: 
 
 ```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, Message))```.
 
-Where Message is :
+Where Message is the payload. It can be any prolog valid term, from a simple string or integer to more complex nested predicates.
 
-```message(To, Ontology, Predicate)```
+```Message``` parameter is the only variable that needs to be binded.
+
+Hence if you ask : 
+
+```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, "I am a drunkyard"))```.
+
+As none of Com_Channel, To, Ontology are binded, the message will be sent to the first contact found into agent addressbook
+After all, this is what you asked : please have this message sent ( no matter to whom)
 
 #### Receiving messages
 
