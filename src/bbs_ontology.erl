@@ -459,9 +459,9 @@ fail_external_predicate({_LCp, _LCps, _Lst},
 %%------------------------------------------------------------------------------
 
 type_of_predicate({_Atom, Term, Type}, Next0, #est{bs = Bs} = St) ->
-    type_of_predicate_deref(erlog_int:dderef(Term, St#est.bs), Type, Next0, St).
+    type_of_predicate_deref(erlog_int:dderef(Term, Bs), Type, Next0, St).
 
-type_of_predicate_deref({'_'}, Type, Next0, #est{bs = Bs} = St) ->
+type_of_predicate_deref({'_'}, Type, Next0, #est{} = St) ->
     erlog_int:unify_prove_body(unbinded, Type, Next0, St);
 type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_binary(Term) ->
     erlog_int:unify_prove_body(string, Type, Next0, St);
