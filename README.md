@@ -4,7 +4,7 @@ A multi-agents asynchronous simulation system
 
 ## Build
 
-    $ rebar3 compile
+    $ mix deps.get; mix compile
 
 ## Concepts
 
