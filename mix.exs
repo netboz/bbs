@@ -1,4 +1,4 @@
-defmodule EsCache.MixProject do
+defmodule Bbs.MixProject do
   use Mix.Project
 
   def project do
@@ -15,18 +15,13 @@ defmodule EsCache.MixProject do
           :warn_obsolete_guard,
           parse_transform: :lager_transform
         ] ++ erlc_options(Mix.env()),
-      deps: deps(),
-      preferred_cli_env: [
-        ct: :test,
-        eunit: :test
+      deps: deps()
       ]
-    ]
   end
 
   defp erlc_options(:test), do: [:nowarn_export_all]
   defp erlc_options(_), do: []
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger],
