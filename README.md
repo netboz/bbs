@@ -2,12 +2,7 @@
 
 A multi-agents asynchronous simulation system
 
-## Build
-
-    $ mix deps.get; mix compile
-
 ## Concepts
-
 
 - A Bubble hosts Agents 
   
@@ -17,6 +12,26 @@ A multi-agents asynchronous simulation system
 
 - Agents are Bubbles
 
+## Features
+
+* Fully asyncrhonous prolog agents made in erlang/OTP.
+* Clusturisable with Swarm, enabling automatic node detection, and faillure recovery.
+* When a node is removed, agents running on this node will be automatically moved to other nodes
+* Multiple communication protocols ( MQTT, HTTP...) (Currently under work)
+* Multiple database backend support for ontologies ( Mnesia, Redis, Ets ...) 
+* Agents can move from one context ( Bubble) to another one.
+
+## Build
+
+    $ mix deps.get; mix compile
+
+## Run
+
+To have a quick try locally you can use this command :
+
+    $ iex --sname bbs  -S mix
+
+Build and Run configuration will be provided shortly.
 
 ## Application start
 
@@ -70,8 +85,6 @@ The format is :
 ```erlang
 {OntologieName, ListOfPrologFiles, ListOfErlangModule}
 ```
-
-These will then be available to the Mother bubble and its children.
 
 ### Root bubble startup
 
@@ -142,9 +155,49 @@ Exemple :
 ```text
 "bbs:agent" : Containing system ontology for BBS agents
 
-"bbs:agent:mts:transport:mqtt", 
-"bbs:agent:mts:transport:http"  : Two ontologies about message transport
+"bbs:mts:client:mqtt", 
+"bbs:mts:client:gproc"  : Two ontologies about message transport
 ```
+
+### Actions
+
+A commonly used design pattern, in bbs ontologies, are the ```Actions```
+
+Let's start with an exemple :
+
+```prolog
+action(drink_bottle(Bottle), [cap_opened(Bottle)], empty(Bottle)).
+```
+
+This naive action predicates says : To reach a final state where a ```Bottle``` is empty, if the bottle is not already empty,
+a solution is to have the cap open, and, then drink it (the ```Bottle```, not the cap ).
+
+Practically, it means if you send to your agent the predicate : ```goal(empty(bottle_of_beer))```,
+It will check if ```bottle_of_beer is empty```. if not, it will try to satisfy subgoals. 
+Here, one sub-goal: ```cap_opened(Bottle).```. So, the agent will try to prove : ```goal(cap_opened(bottle_of_beer))``` first
+and if it succeed, drink it.
+
+Advice : don't let your boose hanging around.
+
+Please note that there might be multiple way to empty a bottle, this can easily be described, by adding new ```Action``` 
+clauses leading to same final state. Here we tell our agent another soltion is to have cap open, bottle head down, and wait and hour.
+This might not be optimal, but should work....if it would come to fail, then the next action leading to this final state would be tried.
+
+```prolog
+action(drink_bottle(Bottle), [cap_opened(Bottle)], empty(Bottle)).
+action(wait(hour(1)), [cap_opened(Bottle), upside_down(Bottle)], empty(Bottle)).
+```
+
+In a more academic format, Actions are taking this form :
+
+````prolog
+action(Transition_Predicate_1, [List_of_prequesites_or_original_states_for_Transition_predicate_1], FinalState).
+action(Transisition_Predicate_2,[List_of_prequesites_or_original_states_for_Transition_predicate_2], FinalState).
+````
+
+They are used by being given as goal to agents :
+
+```goal(FinalState)```
 
 
 ## Messaging
@@ -156,8 +209,8 @@ mqtt clients, http clients...).
 
 ```"bbs:agent"``` ontology contains the needed predicates to send and receive messages.
 
-The predicates in ```bbs:agent``` ontology are relying on some subservice ontologies to perform message transport. 
-These transport ontologies are registered under ```"bbs:agent:mts``` namespace (ex : ```"bbs:agent:mts:mqtt:client"```).
+The predicates in ```bbs:agent``` ontology are relying on some sub-ontologies to perform message transport. 
+These transport ontologies are registered under ```"bbs:mts``` namespace (ex : ```"bbs:mts:client:mqtt"```).
 
 ### Messaging with "bbs:agent"
 
