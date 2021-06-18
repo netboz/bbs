@@ -12,11 +12,11 @@ action(initialize(AgentId, Parent, NameSpace, Params),
     %goal(cc("test", "bbs:agent")),
     %"bbs:agent"::react_on_stim("bbs:agent",
     %    message(Cc, From, To, Ontology, Predicate), "bbs:mts:mqtt:client", test_stim(Ontology, Predicate)) ,
-    register_gproc(Parent),
+    %register_gproc(Parent),
     %% Register this ontology as being able to send message
     "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:gproc")),
-    goal(cc(AgentId, "bbs:agent")),
-        goal(cc(AgentId, "bbs:agent"))
+    goal(cc(AgentId, "bbs:agent"))
+      %  goal(cc(AgentId, "bbs:agent"))
     ],
     initialized(AgentId, Parent, NameSpace, Params)).
 
