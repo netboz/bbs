@@ -14,9 +14,8 @@ A multi-agents asynchronous simulation system
 
 ## Features
 
-* Fully asyncrhonous prolog agents made in erlang/OTP.
+* Fully asyncrhonous prolog agents made in erlang/OTP, thanks to Erlog prolog Stack.
 * Clusturisable with Swarm, enabling automatic node detection, and faillure recovery.
-* When a node is removed, agents running on this node will be automatically moved to other nodes
 * Multiple communication protocols ( MQTT, HTTP...) (Currently under work)
 * Multiple database backend support for ontologies ( Mnesia, Redis, Ets ...) 
 * Agents can move from one context ( Bubble) to another one.
