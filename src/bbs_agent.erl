@@ -28,11 +28,17 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {uuid, parent, onto_to_init = [], onto_dict}).
+-record(agent_state, {uuid, parent, onto_to_init = [], onto_dict}).
 
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
+
+%% @doc This function is called by a gen_statem when it needs to find out
+%% the callback mode of the callback module.
+callback_mode() ->
+    [state_functions, state_enter].
+
 
 %% @doc Creates a gen_statem process which calls Module:init/1 to
 %% initialize. To ensure a synchronized start-up procedure, this
@@ -40,43 +46,33 @@
 start_link(#agent{} = AgentSpecs) ->
     gen_statem:start(?MODULE, AgentSpecs, []).
 
-%% @private
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
-init(AgentSpecs) ->
+init(#agent{name = undefined} = Agent) ->
+    init(Agent#agent{name = zuuid:binary(
+        zuuid:v4())});
+init(#agent{name = AgentName, parent = Parent} = AgentSpecs) when is_binary(AgentName)->
     ?INFO_MSG("Initialising Agent :~p   PID :~p", [AgentSpecs, self()]),
     %% Right now we are trapping exit to manage child processes, even if we don't have one
     process_flag(trap_exit, true),
 
-    %% Create agent Identifier
-    AgentName =
-        case AgentSpecs#agent.name of
-            undefined ->
-                zuuid:binary(
-                    zuuid:v4());
-            SpecificName when is_binary(SpecificName) ->
-                SpecificName;
-            _InvalidName ->
-                ?ERROR_MSG("Invalid name specified :~p ", [_InvalidName]),
-                zuuid:binary(
-                    zuuid:v4())
-        end,
     %% We store agent name in process dictionary for easy retrieval during predicate proving process
     put(agent_name, AgentName),
     put(parent, AgentSpecs#agent.parent),
 
+    %% This is low level registration of the process. This address key will be used for process administration
+    %% from Parents
+    gproc:reg({n, g, {AgentName, Parent}}, "bob"),
+
+    %% For log convenience
+    lager:md([{agent_name, AgentName}]),
     %% Finish init and start ontologies initialisation
     {ok,
         ontologies_init,
-        #state{onto_dict = dict:new(), uuid = AgentName, parent = AgentSpecs#agent.parent},
+        #agent_state{onto_dict = dict:new(), uuid = AgentName, parent = AgentSpecs#agent.parent},
         [{next_event, cast, {init_next, AgentSpecs#agent.startup_ontologies}}]}.
 
-%% @private
-%% @doc This function is called by a gen_statem when it needs to find out
-%% the callback mode of the callback module.
-callback_mode() ->
-    [state_functions, state_enter].
 
 %%------------------------------------------------------------------------------
 %% @private
@@ -86,7 +82,7 @@ callback_mode() ->
 %%------------------------------------------------------------------------------
 
 ontologies_init(enter, _, State) ->
-    ?INFO_MSG("Ontology init :~p.", [State#state.uuid]),
+    ?INFO_MSG("Ontology init :~p.", [State#agent_state.uuid]),
     {keep_state, State};
 ontologies_init(cast, {init_next, []}, State) ->
     %% Call the run predicate in each initialised ontologys
@@ -94,18 +90,18 @@ ontologies_init(cast, {init_next, []}, State) ->
     {next_state, running, State};
 ontologies_init(cast,
     {init_next, [{ontology, Ns, Params, DbMod} | NextOntos]},
-    #state{} = State) ->
-    case bbs_ontology:build_ontology(State#state.uuid, Ns, DbMod) of
+    #agent_state{} = State) ->
+    case bbs_ontology:build_ontology(State#agent_state.uuid, Ns, DbMod) of
         {error, OntoBuildError} ->
             ?ERROR_MSG("~p Failled to initialize ontology :~p with error: ~p",
-                [State#state.uuid, Ns, OntoBuildError]),
+                [State#agent_state.uuid, Ns, OntoBuildError]),
             {stop, {ontologies_creation_failled, Ns, OntoBuildError}, State};
         {ok, {_Tid, Kb}} ->
             ?INFO_MSG("Builded Knowledge Base for :~p", [Ns]),
             %% Set the prolog engine to not crash when a predicate isn't found. TODO : Guess this should be done earlier
             {succeed, KbReady} = erlog_int:prove_goal({set_prolog_flag, unknown, fail}, Kb),
 
-            case erlog_int:prove_goal({goal, {initialized, State#state.uuid, State#state.parent, Ns, Params}}, KbReady)
+            case erlog_int:prove_goal({goal, {initialized, State#agent_state.uuid, State#agent_state.parent, Ns, Params}}, KbReady)
             of
                 {succeed, _InitializedOntoState} ->
                     %% Register the raw kb state into process stack under key Namespace
@@ -125,7 +121,7 @@ ontologies_init(cast,
 
 ontologies_init(info, {'EXIT', Pid, Reason}, State) ->
     ?INFO_MSG("Child ~p EXIT with reason :~p",
-        [State#state.uuid, Pid, Reason]),
+        [State#agent_state.uuid, Pid, Reason]),
     {stop, Reason, State};
 
 
@@ -133,12 +129,12 @@ ontologies_init(info, {'EXIT', Pid, Reason}, State) ->
 %% doesn't start from an atom, it crash the prolog engine...hence this dedicated clause.
 ontologies_init(info, {{'DOWN', Name}, _ref, process, Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p EXITED with reason :~p",
-        [State#state.uuid, Pid, Reason]),
+        [State#agent_state.uuid, Pid, Reason]),
     _ = trigger_agent_reactions(info_event, {child_down, Name, Reason}),
     {next_state, ontologies_init, State};
 
 ontologies_init(Type, Message, State) when is_tuple(Message) ->
-    ?INFO_MSG("~p Got event :~p   ~p", [State#state.uuid, {Type, Message}, self()]),
+    ?INFO_MSG("~p Got event :~p   ~p", [State#agent_state.uuid, {Type, Message}, self()]),
     %% The purpose of this is only to avoid using the event Type directly into prolog, because 'call' type
     %% collides with the one in ontologies, included by erlog_int
     case Type of
@@ -153,7 +149,7 @@ ontologies_init(Type, Message, State) when is_tuple(Message) ->
 
 ontologies_init(UnkMesTyp, UnkMes, State) ->
     ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",
-        [State#state.uuid, {UnkMesTyp, UnkMes}]),
+        [State#agent_state.uuid, {UnkMesTyp, UnkMes}]),
     {next_state, running, State}.
 %%------------------------------------------------------------------------------
 %% @doc
@@ -163,8 +159,17 @@ ontologies_init(UnkMesTyp, UnkMes, State) ->
 %% @end
 %%------------------------------------------------------------------------------
 
-running(enter, _, State) ->
-    ?INFO_MSG("Agent ~p is running.", [State#state.uuid]),
+running(enter, _, #agent_state{uuid = Uuid, parent = Parent} = State) when is_binary(Parent)->
+    ?INFO_MSG("Agent ~p is running.", [Uuid]),
+    {monitored_by, Monitors} = erlang:process_info(self(), monitored_by),
+    lists:foreach(fun(Pid) -> Pid!{running, Uuid, Parent} end, Monitors),
+    trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
+    {keep_state, State};
+running(enter, _, #agent_state{uuid = <<"root">> = Uuid, parent = Parent} = State) ->
+    ?INFO_MSG("Root bubble is running on ~p", [Parent]),
+    OtherNodes = nodes(),
+    lists:foreach(fun(Node) -> gproc:send({n, g, {Uuid, Node}}, {running, Uuid, Parent}) end, OtherNodes),
+    trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
     {keep_state, State};
 %%running(cast, {NameSpace, Predicate}, State) ->
 %%    ?INFO_MSG("Agent ~p checking for stims on :~p", [State#state.uuid, {NameSpace, Predicate}]),
@@ -173,19 +178,19 @@ running(enter, _, State) ->
 
 running(info, {'EXIT', Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p disconnected with reason :~p",
-        [State#state.uuid, Pid, Reason]),
+        [State#agent_state.uuid, Pid, Reason]),
     {stop, Reason, State};
 
 %% Ideally this message received from a monitor should be managed by next clause, but because message from monitor
 %% doesn't start from an atom, it crash the prolog engine...hence this dedicated clause.
 running(info, {{'DOWN', Name}, _ref, process, Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p EXITED with reason :~p",
-        [State#state.uuid, Pid, Reason]),
+        [State#agent_state.uuid, Pid, Reason]),
     _ = trigger_agent_reactions(info_event, {child_down, Name, Reason}),
     {next_state, running, State};
 
 running(Type, Message, State) when is_tuple(Message)->
-    ?INFO_MSG("~p Got event :~p   ~p", [State#state.uuid, {Type, Message}, self()]),
+    ?INFO_MSG("~p Got event :~p   ~p", [State#agent_state.uuid, {Type, Message}, self()]),
 
     %% The purpose of this is only to avoid using the event Type directly into prolog, because 'call' type
     %% collides with the one in ontologies, included by erlog_int
@@ -201,7 +206,7 @@ running(Type, Message, State) when is_tuple(Message)->
 
 running(UnkMesTyp, UnkMes, State) ->
     ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",
-        [State#state.uuid, {UnkMesTyp, UnkMes}]),
+        [State#agent_state.uuid, {UnkMesTyp, UnkMes}]),
     {next_state, running, State}.
 
 %% @private
@@ -209,13 +214,13 @@ running(UnkMesTyp, UnkMes, State) ->
 %% terminate. It should be the opposite of Module:init/1 and do any
 %% necessary cleaning up. When it returns, the gen_statem terminates with
 %% Reason. The return value is ignored.
-terminate(_Reason, _StateName, State = #state{}) ->
-    ?INFO_MSG("Agent :~p   PID :~p terminating", [State#state.uuid, self()]),
+terminate(_Reason, _StateName, State) ->
+    ?INFO_MSG("Agent :~p   PID :~p terminating", [State#agent_state.uuid, self()]),
     ok.
 
 %% @private
 %% @doc Convert process state when code is changed
-code_change(_OldVsn, StateName, State = #state{}, _Extra) ->
+code_change(_OldVsn, StateName, State = #agent_state{}, _Extra) ->
     {ok, StateName, State}.
 
 %%%=============================================================================
