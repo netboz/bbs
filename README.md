@@ -227,7 +227,7 @@ Sending messages is made using the ```message_sent/4``` action predicate :
 
 Ex: 
 
-$ ```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, Message))```.
+```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, Message))```.
 
 Where Message is the payload. It can be any prolog valid term, from a simple string or integer to more complex 
 nested predicates.
@@ -236,7 +236,7 @@ nested predicates.
 
 Hence if you ask : 
 
-$ ```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, "I am a drunkyard"))```.
+```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, "I am a drunkyard"))```.
 
 As none of Com_Channel, To, Ontology are binded, the message will be sent to the first contact found into agent addressbook
 After all, this is what you asked : please have this message sent ( no matter to whom)
