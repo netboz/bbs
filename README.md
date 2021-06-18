@@ -194,10 +194,12 @@ action(Transition_Predicate_1, [List_of_prequesites_or_original_states_for_Trans
 action(Transisition_Predicate_2,[List_of_prequesites_or_original_states_for_Transition_predicate_2], FinalState).
 ````
 
-Actions are used in conjonction with ```goal/1``` predicate. ```Goal``` predicate will try to match its single parameter \
-with one of the final state defined among the actions of the current ontology.
+Actions are used in conjonction with ```goal/1``` predicate.
 
 ```goal(FinalState)```
+
+```Goal``` predicate will try to match its single parameter
+with one of the final states defined among the actions of the current ontology.
 
 ex:
 
@@ -225,7 +227,8 @@ Ex:
 
 ```bbs:agent::goal(message_sent(Communication_Channel, To, Ontology, Message))```.
 
-Where Message is the payload. It can be any prolog valid term, from a simple string or integer to more complex nested predicates.
+Where Message is the payload. It can be any prolog valid term, from a simple string or integer to more complex 
+nested predicates.
 
 ```Message``` parameter is the only variable that needs to be binded.
 
