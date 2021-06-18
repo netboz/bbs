@@ -34,6 +34,8 @@ Build and Run configuration will be provided shortly.
 
 ## Application start
 
+Purpose of this section is to get a first contact with the system by studying its startup procedure.
+
 ### System ontologies registration
 
 The goal of the application starting process is to have the root bubble running. 
