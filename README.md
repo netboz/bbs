@@ -15,10 +15,10 @@ A multi-agents asynchronous simulation system
 ## Features
 
 * Fully asyncrhonous prolog agents made in erlang/OTP, thanks to Erlog prolog Stack.
-* Clusturisable with Swarm, enabling automatic node detection, and faillure recovery.
+* Clusturisable with Swarm, enabling automatic node detection, and faillure recovery. (Currently under work)
 * Multiple communication protocols ( MQTT, HTTP...) (Currently under work)
-* Multiple database backend support for ontologies ( Mnesia, Redis, Ets ...) 
-* Agents can move from one context ( Bubble) to another one.
+* Multiple database backend support for ontologies ( Mnesia, Redis, Ets ...) (Currently under work)
+* Agents can move from one context ( Bubble) to another one. (Currently under work)
 
 ## Build
 
@@ -131,17 +131,16 @@ the categories, properties and relations between the concepts, data and entities
 domains of discourse.
 ```
 
-Considering this defintion, our use of thr term 'Ontology' might be slighly pretencious, but this is what we are aiming to.
+Considering this definition, our use of thr term 'Ontology' might be slighly pretencious, but this is what we are aiming to.
 
-To make it simple, in BBS, an ontology holds knowledge : Knowdledge of swamp flowers, knowledge about how to walk on two feet, 
-knowledge on how to send an http REST request...
+To make it simple, in BBS, an ontology holds knowledge : Knowdledge of swamp flowers, knowledge of trapist beers, 
+knowledge about how to walk on two feet, optionally, knowledge on how to send an http REST request...
 
 The agents can use these ontologies to perform tasks, answer questions related to a domain.
 
 In BBS, ontologies are written mainly in Prolog ( and erlang, for some low level system predicates )
 
 Each Ontology is identified by a namespace.
-
 
 ### Ontology namespaces
 
@@ -157,7 +156,7 @@ Exemple :
 "bbs:agent" : Containing system ontology for BBS agents
 
 "bbs:mts:client:mqtt", 
-"bbs:mts:client:gproc"  : Two ontologies about message transport
+"bbs:mts:client:gproc"  : Two ontologies about messages transport
 ```
 
 ### Actions
@@ -171,17 +170,17 @@ action(drink_bottle(Bottle), [cap_opened(Bottle)], empty(Bottle)).
 ```
 
 This naive action predicates says : To reach a final state where a ```Bottle``` is empty, if the bottle is not already empty,
-a solution is to have the cap open, and, then drink it (the ```Bottle```, not the cap ).
+a solution is to have the cap open, and, then drink it.
 
 Practically, it means if you send to your agent the predicate : ```goal(empty(bottle_of_beer))```,
 It will check if ```bottle_of_beer is empty```. if not, it will try to satisfy subgoals. 
 Here, one sub-goal: ```cap_opened(Bottle).```. So, the agent will try to prove : ```goal(cap_opened(bottle_of_beer))``` first
-and if it succeed, drink it.
+and if it succeed, as they are no more pre-requisite, drink it.
 
 Advice : don't let your boose hanging around.
 
 Please note that there might be multiple way to empty a bottle, this can easily be described, by adding new ```Action``` 
-clauses leading to same final state. Here we tell our agent another soltion is to have cap open, bottle head down, and wait and hour.
+clauses leading to same final state. Here we tell our agent another solution is to have cap open, put bottle head down, and wait and hour.
 This might not be optimal, but should work....if it would come to fail, then the next action leading to this final state would be tried.
 
 ```prolog
