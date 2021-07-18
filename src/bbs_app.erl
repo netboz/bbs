@@ -10,7 +10,7 @@
 
 -behaviour(application).
 
--export([start/2, stop/1]).
+-export([start/2, stop/1, hostname/0]).
 -export([new_bubble/1, new_bubble_test/0]).
 
 -define(SWARM, 'Elixir.Swarm').
@@ -54,7 +54,7 @@ default_root_bubble_ontologies() ->
     {ontology, <<"bbs:mts:client:gproc">>, [], bbs_db_ets},
     {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
     %   {ontology, <<"bbs:mts:mqtt:broker">>, [], bbs_db_ets},
-    %   {ontology, <<"bbs:mts:mqtt:client">>, [], bbs_db_ets},
+    {ontology, <<"bbs:mts:client:mqtt">>, [], bbs_db_ets},
     {ontology, <<"bbs:root">>, [], bbs_db_ets}].
 
 %% API
@@ -74,7 +74,7 @@ new_bubble_test() ->
       [% broken {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
         {ontology, <<"bbs:agent">>, [], bbs_db_ets},
         %    {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
-            {ontology, <<"bbs:mts:client:gproc">>, [], bbs_db_ets}
+        {ontology, <<"bbs:mts:client:gproc">>, [], bbs_db_ets}
         %    {ontology, <<"bbs:mts:mqtt:client">>, [], bbs_db_ets},
         %    {ontology, <<"bbs:root">>, [], bbs_db_ets}]},
       ]},
@@ -90,3 +90,11 @@ new_bubble_test() ->
 
   {ok, _Pid} =  ?SWARM:register_name(Id, supervisor, start_child, [bbs_sup, Root_bubble_specs]).
 
+hostname() ->
+  case {inet_db:gethostname(),inet_db:res_option(domain)} of
+    {H,D} when is_list(D), is_list(H),
+      length(D)> 0, length(H)>0 ->
+      H ++ "." ++ D;
+    Other ->
+      error({hostname, Other})
+  end.
