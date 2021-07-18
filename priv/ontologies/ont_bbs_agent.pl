@@ -94,6 +94,40 @@ do_process_stim(StimOnt, StimMessage) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+
+%% This action the create Communication Channels (CCs) locally
+action(goal(cc(CcId, Ontology, "bbs:mts:client:gproc")) ,[], cc(CcId, Ontology)).
+action(TransportOntology::goal(cc(CcId, Ontology)), [], cc(CcId, Ontology, TransportOntology)).
+
+
+
+action(TransportOntology::send(CcId, Payload),[cc(CcId, _Ontology, TransportOntology)], sent(CcId, Payload)).
+
+action(TransportOntology::send(CcId, message(From, To, Ontology, Payload)),
+    [cc(CcId, Ontology, TransportOntology), TransportOntology::To],message_sent(CcId, message(From, To, Ontology, Payload))).
+
+
+to(agent(Agent, Parent), CcId) :-
+
+
+
+
+%% Drafty
+%% Per default Cc is local
+host(Cc) :- "localhost".
+
+%% gproc service is provided by
+service("bbs:mts:gproc:client", "bbs:mts:gproc:server").
+
+
+
+
+
+
+
+
+
+
 action(process_incoming_message(Com_Channel, From, To, Ontology, Predicate),
     [],
         incoming_message_processed(Com_Channel, From, To, Ontology, Predicate)).
@@ -107,7 +141,10 @@ action(Transport_Ontology::goal(sent(CcId, Predicate)),
 
 action(Transport_Ontology::goal(cc(CcId, Ontology)),
     [message_transport_ontology(Transport_Ontology)],
-        cc(Transport_Ontology, CcId, Ontology)).
+        cc(Transport_Ontology, CcId, Ontology, Host)).
+
+action(goal(cc(Transport_Ontology, CcId, Ontology,"localhost") ,[], cc(Transport_Ontology, CcId, Ontology)).
+
 
 cc(Transport_Ontology, CcId, Ontology) :-
     me(Me),

@@ -55,12 +55,28 @@ join_cc_predicate({_, CCId, Ontology}, Next0, #est{bs = Bs} = St) ->
   Parent = get(parent),
   case lists:any(fun(El) -> case El of  {_} -> true; _ -> false end end, ListD) of
     true ->
+      %% All parameters need to be binded
       erlog_int:fail(St);
     _ ->
       Me = get(agent_name),
       gproc:reg({p, g, DCCId}, {Me, Parent, DOntology} ),
       erlog_int:prove_body(Next0, St)
   end.
+
+to_predicate({_, CCId, Agent, Parent}, Next0, #est{bs = Bs} = St) ->
+  ?INFO_MSG("--->Looking for TO on CC :~p",[{CCId, {Agent, Parent}}]),
+  [DCCId, DAgent, DParent] = DOptionList = erlog_int:dderef([CCId, Agent, Parent], Bs),
+  case erlog:vars_in(DOptionList) of
+    [_] -> %At least one parameter is binded
+      GProcKey = {p, g, to_query_param(DCCId)},
+      MatchHead = {GProcKey, '_', {to_query_param(DAgent), to_query_param(DParent),}},
+      Guard = [],
+      Result = ['$$'],
+      SelectedCCs = gproc:select([{MatchHead, Guard, Result}]),
+      ?INFO_MSG("Selected CCs :~p",[SelectedCCs]),
+
+      cc_predicate2(DCCId, DTo, DParent, Next0, St, SelectedCCs).
+
 
 cc_predicate({_, CCId, To, Ontology, Parent}, Next0, #est{bs = Bs} = St) ->
   ?INFO_MSG("--->Looking for CC :~p",[{CCId, To, Ontology, Parent}]),

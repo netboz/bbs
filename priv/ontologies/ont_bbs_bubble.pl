@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 action(initialize(AgentId, Parent, NameSpace, Params), [
-    child("test_bob",[ontology("bbs:agent", [], bbs_db_ets),
-                      ontology("bbs:mts:client:gproc", [], bbs_db_ets)]),
+    %child("test_bob",[ontology("bbs:agent", [], bbs_db_ets),
+    %                  ontology("bbs:mts:client:gproc", [], bbs_db_ets)]),
     "bbs:agent"::react_on(info_event, child_down(AnyChild, Reason), "bbs:bubble", signal_process_exit(AnyChild, Reason),[])],
         initialized(AgentId, Parent, NameSpace, Params)).
 

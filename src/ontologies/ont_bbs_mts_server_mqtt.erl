@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 15. juil. 2015 23:23
 %%%-------------------------------------------------------------------
--module('ont_bbs_mts_mqtt_broker.erl').
+-module(ont_bbs_mts_server_mqtt).
 
 -author("netboz").
 
