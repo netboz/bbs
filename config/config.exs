@@ -1,4 +1,5 @@
-ATTILA# TODO: replace with Config when we will migrate to Elixir 1.9
+# TODO: replace with Config when we will migrate to Elixir 1.9
+ATTILA
 use Mix.Config
 
 config_file = "app.config"

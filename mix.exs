@@ -16,7 +16,7 @@ defmodule Bbs.MixProject do
           parse_transform: :lager_transform
         ] ++ erlc_options(Mix.env()),
       deps: deps()
-      ]
+    ]
   end
 
   defp erlc_options(:test), do: [:nowarn_export_all]
