@@ -57,17 +57,20 @@ init(#agent{name = AgentName, parent = Parent} = AgentSpecs) when is_binary(Agen
     %% Right now we are trapping exit to manage child processes, even if we don't have one
     process_flag(trap_exit, true),
 
-    %% We store agent name in process dictionary for easy retrieval during predicate proving process
+    %% We store agent name in process dictionary for easy retrieval during predicate proving process. Ideally, agent name,
+    %% and parent should be managed only with bbs:agent ontology, and internally like this in process dict, but to avoid
+    %% querying bbs:agent each time we want to access these values, for perf, it is here for now
     put(agent_name, AgentName),
     put(parent, AgentSpecs#agent.parent),
 
     %% This is low level registration of the process. This address key will be used for process administration
     %% from Parents
-    gproc:reg({n, g, {AgentName, Parent}}, "bob"),
+    gproc:reg({n, g, {AgentName, Parent}}, value_unused),
 
     %% For log convenience
     lager:md([{agent_name, AgentName}]),
-    %% Finish init and start ontologies initialisation
+
+    %% Finish init to start ontologies initialisation
     {ok,
         ontologies_init,
         #agent_state{onto_dict = dict:new(), uuid = AgentName, parent = AgentSpecs#agent.parent},
@@ -101,19 +104,23 @@ ontologies_init(cast,
             %% Set the prolog engine to not crash when a predicate isn't found. TODO : Guess this should be done earlier
             {succeed, KbReady} = erlog_int:prove_goal({set_prolog_flag, unknown, fail}, Kb),
 
+            %% Register the raw kb state into process stack under key Namespace, we need to do it even if the
+            %% ontology isn't yet initialised, for hooks to be able to find the ontology.
+            %% TODO : This ^^ needs to be refactored
+            undefined = store_ontology_state_on_namespace(Ns, KbReady),
             case erlog_int:prove_goal({goal, {initialized, State#agent_state.uuid, State#agent_state.parent, Ns, Params}}, KbReady)
             of
                 {succeed, _InitializedOntoState} ->
-                    %% Register the raw kb state into process stack under key Namespace
-                    undefined = store_ontology_state_on_namespace(Ns, KbReady),
                     {next_state,
                         ontologies_init,
                         State,
                         [{next_event, cast, {init_next, NextOntos}}]};
                 {fail, FStatr} ->
+                    _ = erase(Ns),
                     ?ERROR_MSG("Ontology initialisation failed :~p with state: ~p", [Ns, FStatr]),
                     {stop, {ontologies_initialisation_failed, Ns}, State};
                 Else ->
+                    _ = erase(Ns),
                     ?ERROR_MSG("Ontology unexpected result :~p", [Else]),
                     {stop, {ontologies_initialisation_failed, Ns}, State}
             end
@@ -122,7 +129,7 @@ ontologies_init(cast,
 ontologies_init(info, {'EXIT', Pid, Reason}, State) ->
     ?INFO_MSG("Child ~p EXIT with reason :~p",
         [State#agent_state.uuid, Pid, Reason]),
-    {stop, Reason, State};
+    {next_state, ontologies_init, State};
 
 
 %% Ideally this message received from a monitor should be managed by next clause, but because message from monitor
@@ -161,6 +168,7 @@ ontologies_init(UnkMesTyp, UnkMes, State) ->
 
 running(enter, _, #agent_state{uuid = Uuid, parent = Parent} = State) when is_binary(Parent)->
     ?INFO_MSG("Agent ~p is running.", [Uuid]),
+    %% Notify monitors with a predicate that this agent  is running
     {monitored_by, Monitors} = erlang:process_info(self(), monitored_by),
     lists:foreach(fun(Pid) -> Pid!{running, Uuid, Parent} end, Monitors),
     trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
@@ -168,18 +176,16 @@ running(enter, _, #agent_state{uuid = Uuid, parent = Parent} = State) when is_bi
 running(enter, _, #agent_state{uuid = <<"root">> = Uuid, parent = Parent} = State) ->
     ?INFO_MSG("Root bubble is running on ~p", [Parent]),
     OtherNodes = nodes(),
+    %% Notify other roots bubble in cluster a new root is running
     lists:foreach(fun(Node) -> gproc:send({n, g, {Uuid, Node}}, {running, Uuid, Parent}) end, OtherNodes),
+    %% And trigger hooks waiting for running.
     trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
     {keep_state, State};
-%%running(cast, {NameSpace, Predicate}, State) ->
-%%    ?INFO_MSG("Agent ~p checking for stims on :~p", [State#state.uuid, {NameSpace, Predicate}]),
-%%    trigger_stims(NameSpace, Predicate),
-%%    {next_state, running, State};
 
 running(info, {'EXIT', Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p disconnected with reason :~p",
         [State#agent_state.uuid, Pid, Reason]),
-    {stop, Reason, State};
+    {next_state, running, State};
 
 %% Ideally this message received from a monitor should be managed by next clause, but because message from monitor
 %% doesn't start from an atom, it crash the prolog engine...hence this dedicated clause.
