@@ -91,9 +91,22 @@ do_process_stim(StimOnt, StimMessage) :-
     "bbs:agent:stims"::retract(( Head :- Body )),
     fail.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% other agents related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% @doc: agent(+AgentName:string)
+%% Match with first child agent.
+%% A agent(+AgentName:string, +ParentName:string) predicate exists as built in.
+
+agent(Name) :-
+    me(Me),
+    agent(Name, Me).
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+%% There is no management of agents residing on another platform atm.
 
 %% This action the create Communication Channels (CCs) locally
 action(goal(cc(CcId, Ontology, "bbs:mts:client:gproc")) ,[], cc(CcId, Ontology)).
@@ -103,28 +116,15 @@ action(TransportOntology::goal(cc(CcId, Ontology)), [], cc(CcId, Ontology, Trans
 
 action(TransportOntology::send(CcId, Payload),[cc(CcId, _Ontology, TransportOntology)], sent(CcId, Payload)).
 
-action(TransportOntology::send(CcId, message(From, To, Ontology, Payload)),
-    [cc(CcId, Ontology, TransportOntology), TransportOntology::To],message_sent(CcId, message(From, To, Ontology, Payload))).
+
+action(TransportOntology::send(CcId, message(To, Ontology, Payload)),
+    ["bbs:agent:ccs":cc(CcId, Ontology, TransportOntology), to(To, CcId)], message_sent(CcId, message(To, Ontology, Payload))).
 
 
 to(agent(Agent, Parent), CcId) :-
-
-
-
-
-%% Drafty
-%% Per default Cc is local
-host(Cc) :- "localhost".
-
-%% gproc service is provided by
-service("bbs:mts:gproc:client", "bbs:mts:gproc:server").
-
-
-
-
-
-
-
+    agent(Agent, Parent),
+    "bbs:agent:ccs"::cc(CcId, Ontology, TransportOntology),
+    Ontology::to(agent(Agent, Parent), CcId).
 
 
 
