@@ -143,8 +143,7 @@ action(Transport_Ontology::goal(cc(CcId, Ontology)),
     [message_transport_ontology(Transport_Ontology)],
         cc(Transport_Ontology, CcId, Ontology, Host)).
 
-action(goal(cc(Transport_Ontology, CcId, Ontology,"localhost") ,[], cc(Transport_Ontology, CcId, Ontology)).
-
+action(goal(cc(Transport_Ontology, CcId, Ontology,"localhost")), [], cc(Transport_Ontology, CcId, Ontology)).
 
 cc(Transport_Ontology, CcId, Ontology) :-
     me(Me),

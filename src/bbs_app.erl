@@ -51,11 +51,12 @@ default_root_bubble_ontologies() ->
   [{ontology, <<"bbs:brain_tests:data">>, [], bbs_db_ets},
     {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
     {ontology, <<"bbs:agent">>, [], bbs_db_ets},
-    {ontology, <<"bbs:mts:client:gproc">>, [], bbs_db_ets},
-    {ontology, <<"bbs:bubble">>, [], bbs_db_ets},
+    {ontology, <<"bbs:mts:client:gproc">>, [], bbs_db_ets}
+    %{ontology, <<"bbs:bubble">>, [], bbs_db_ets},
     %   {ontology, <<"bbs:mts:mqtt:broker">>, [], bbs_db_ets},
-    {ontology, <<"bbs:mts:client:mqtt">>, [], bbs_db_ets},
-    {ontology, <<"bbs:root">>, [], bbs_db_ets}].
+   % {ontology, <<"bbs:mts:client:mqtt">>, [], bbs_db_ets},
+   % {ontology, <<"bbs:root">>, [], bbs_db_ets}
+   ].
 
 %% API
 
