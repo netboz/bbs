@@ -82,7 +82,7 @@ do_agent_predicate2(DAgentName, DParentName, Next0, #est{bs = Bs, vn = Vn, cps =
     [[{_, _, {Ragent, Rparent}}, _, _] | Tail]) ->
     ?INFO_MSG("Agent ~p",[{Ragent, Rparent}]),
 
-    case unify([DAgentName, DParentName], [Ragent, Rparent], Bs) of
+    case erlog_int:unify([DAgentName, DParentName], [Ragent, Rparent], Bs) of
         {succeed, NewBs} ->
             ?INFO_MSG("Unified Agent",[]),
 
@@ -225,3 +225,8 @@ unlistify([]) ->
     true;
 unlistify(G) ->
     G.                              %In case it wasn't a list.
+
+to_query_param({_}) ->
+  '_';
+to_query_param(Value) ->
+  Value.
