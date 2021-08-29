@@ -38,7 +38,7 @@ defmodule Bbs.MixProject do
       {:locks, git: "https://github.com/uwiger/locks.git", override: true},
       {:zuuid, git: "https://gitlab.com/zxq9/zuuid.git", branch: "master", app: false},
       {:erlog, git: "git@bitbucket.org:netboz/erlog_bbs.git", branch: "master"},
-      {:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"}
+      #{:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"}
       # {:getopt, "1.0.1", [env: :prod, repo: "hexpm",  manager: :rebar, hex: "getopt", override: true]},
       #   {:emqx, git: "https://github.com/emqx/emqx.git",
       #     branch: "master", manager: :rebar3, override: true},
