@@ -1,5 +1,8 @@
 %{
+  "cf": {:hex, :cf, "0.2.2", "7f2913fff90abcabd0f489896cfeb0b0674f6c8df6c10b17a83175448029896c", [:rebar3], [], "hexpm", "48283b3019bc7fad56e7b23028a5da4d3e6cd598a553ab2a99a2153bf5f19b21"},
   "cowlib": {:hex, :cowlib, "2.11.0", "0b9ff9c346629256c42ebe1eeb769a83c6cb771a6ee5960bd110ab0b9b872063", [:make, :rebar3], [], "hexpm", "2b3e9da0b21c4565751a6d4901c20d1b4cc25cbb7fd50d91d2ab6dd287bc86a9"},
+  "ctex": {:hex, :ctex, "0.1.0", "2e88454954d3490b49ad8e4440ebe785989a7a689e21e2064bacbb1cd78f21d2", [:mix], [{:cth_readable, "~> 1.4.0", [hex: :cth_readable, repo: "hexpm", optional: false]}], "hexpm", "a2b958621f53e9a4679ec186ae3a26bb0e619b76767ce41f45fde7895fa3c557"},
+  "cth_readable": {:hex, :cth_readable, "1.4.9", "034fb69795f11061980ecb62b40ef51dc10d4ac115b98fdb2c0cc71d851fbf98", [:rebar3], [{:cf, "~>0.2.1", [hex: :cf, repo: "hexpm", optional: false]}], "hexpm", "b4c6ababdb046c5f2fbb3c22f030b4c5a679083956dcdd29c1df0cb30b18da24"},
   "emqtt": {:git, "https://github.com/emqx/emqtt.git", "25892ef48a979a9dfbd74d86133cb28cf11f3cf4", [branch: "master"]},
   "erlog": {:git, "git@bitbucket.org:netboz/erlog_bbs.git", "7303bf170945dfbe25014bf2a6b1232c0563d8d4", [branch: "master"]},
   "gen_state_machine": {:hex, :gen_state_machine, "2.1.0", "a38b0e53fad812d29ec149f0d354da5d1bc0d7222c3711f3a0bd5aa608b42992", [:mix], [], "hexpm", "ae367038808db25cee2f2c4b8d0531522ea587c4995eb6f96ee73410a60fa06b"},
@@ -10,6 +13,7 @@
   "lager": {:hex, :lager, "3.9.2", "4cab289120eb24964e3886bd22323cb5fefe4510c076992a23ad18cf85413d8c", [:rebar3], [{:goldrush, "0.1.9", [hex: :goldrush, repo: "hexpm", optional: false]}], "hexpm", "7f904d9e87a8cb7e66156ed31768d1c8e26eba1d54f4bc85b1aa4ac1f6340c28"},
   "libring": {:hex, :libring, "1.5.0", "44313eb6862f5c9168594a061e9d5f556a9819da7c6444706a9e2da533396d70", [:mix], [], "hexpm", "04e843d4fdcff49a62d8e03778d17c6cb2a03fe2d14020d3825a1761b55bd6cc"},
   "locks": {:git, "https://github.com/uwiger/locks.git", "c67ebb36bf3aea33765b2c96163884cd94e66ef5", []},
+  "mix_erlang_tasks": {:hex, :mix_erlang_tasks, "0.1.0", "36819fec60b80689eb1380938675af215565a89320a9e29c72c70d97512e4649", [:mix], [], "hexpm", "95d2839c422c482a70c08a8702da8242f86b773f8ab6e8602a4eb72da8da04ed"},
   "plain_fsm": {:hex, :plain_fsm, "1.4.1", "47e9bf6ac9322fc7586fb6df8de7198391e93764571c75165f2c45b27acde1d0", [:rebar3], [], "hexpm", "6ce2e7efdcdc516eebced22a6ed2b1ab760f8275ee230f7c80b48dd32ae0da39"},
   "quicer": {:git, "https://github.com/emqx/quic.git", "348c08a3f5a3b90861906fb436ff0ced453adfa2", [tag: "0.0.8"]},
   "snabbkaffe": {:git, "https://github.com/kafka4beam/snabbkaffe.git", "2f2f6ad09b97e33ba66b195665cef17d04598abd", [tag: "0.13.0"]},
