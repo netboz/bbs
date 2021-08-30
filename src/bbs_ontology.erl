@@ -158,6 +158,7 @@ get_registered_ont_desc(NameSpace) ->
 %% @end
 %%------------------------------------------------------------------------------
 
+-spec(build_ontology(AgentId :: binary(), NameSpace ::binary() | list(), DbMod :: atom()) -> tuple()).
 build_ontology(AgentId, NameSpace, DbMod) when is_list(NameSpace) ->
     build_ontology(AgentId, iolist_to_binary(NameSpace), DbMod);
 build_ontology(AgentId, NameSpace, DbMod) ->
