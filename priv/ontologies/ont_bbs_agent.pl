@@ -118,13 +118,8 @@ action(TransportOntology::send(CcId, Payload),[cc(CcId, _Ontology, TransportOnto
 
 
 action(TransportOntology::send(CcId, message(To, Ontology, Payload)),
-    ["bbs:agent:ccs":cc(CcId, Ontology, TransportOntology), to(To, CcId)], message_sent(CcId, message(To, Ontology, Payload))).
+    ["bbs:agent:ccs":cc(CcId, Ontology, TransportOntology), TransportOntology::to(To, CcId)], message_sent(CcId, message(To, Ontology, Payload))).
 
-
-to(agent(Agent, Parent), CcId) :-
-    agent(Agent, Parent),
-    "bbs:agent:ccs"::cc(CcId, Ontology, TransportOntology),
-    Ontology::to(agent(Agent, Parent), CcId).
 
 
 
