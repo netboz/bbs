@@ -13,9 +13,11 @@ deps
 erl_crash.dump
 .rebar
 logs
+ctest/logs
 *.log
 _build
 .idea
+erlang_ls.config
 *.iml
 rebar3.crashdump
 *~
