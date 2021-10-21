@@ -24,7 +24,7 @@ defmodule Bbs.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :mix],
       mod: {:bbs_app, []}
     ]
   end
@@ -32,17 +32,14 @@ defmodule Bbs.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:lager, ">= 0.0.0"},
-      {:swarm, "~> 3.4"},
-      {:gproc, git: "https://github.com/uwiger/gproc.git", branch: "uw-locks_leader"},
-      {:locks, git: "https://github.com/uwiger/locks.git", override: true},
-      {:zuuid, git: "https://gitlab.com/zxq9/zuuid.git", branch: "master", app: false},
+      {:lager, ">= 0.0.0", override: true},
+      {:horde, "~> 0.8.4"},
       {:erlog, git: "git@bitbucket.org:netboz/erlog_bbs.git", branch: "master"},
-
+      {:uuid, git: "https://github.com/avtobiff/erlang-uuid.git", branch: "master"},
       ## For tests
       {:mix_erlang_tasks, "0.1.0"}
 
-      #{:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"}
+      # {:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"}
       # {:getopt, "1.0.1", [env: :prod, repo: "hexpm",  manager: :rebar, hex: "getopt", override: true]},
       #   {:emqx, git: "https://github.com/emqx/emqx.git",
       #     branch: "master", manager: :rebar3, override: true},

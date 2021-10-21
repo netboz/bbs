@@ -158,7 +158,10 @@ get_registered_ont_desc(NameSpace) ->
 %% @end
 %%------------------------------------------------------------------------------
 
--spec(build_ontology(AgentId :: binary(), NameSpace ::binary() | list(), DbMod :: atom()) -> tuple()).
+-spec build_ontology(AgentId :: binary(),
+                     NameSpace :: binary() | list(),
+                     DbMod :: atom()) ->
+                        tuple().
 build_ontology(AgentId, NameSpace, DbMod) when is_list(NameSpace) ->
     build_ontology(AgentId, iolist_to_binary(NameSpace), DbMod);
 build_ontology(AgentId, NameSpace, DbMod) ->
@@ -383,7 +386,6 @@ prove_external_ontology_predicate({_Atom,
 
     case bbs_agent:get_ontology_state_from_namespace(DDExternalOntNs) of
         #est{} = ExternalOntologyState ->
-
             DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
             case erlog_int:prove_goal(DDExternalPredicate,
                                       [],
@@ -391,6 +393,7 @@ prove_external_ontology_predicate({_Atom,
                                                                 vn = ParentVn})
             of
                 {succeed, #est{vn = NewVn} = NewExternalState} ->
+                    bbs_agent:store_ontology_state_on_namespace(ExternalOntologyNameSpace, NewExternalState),
                     DDResultPredicate =
                         erlog_int:dderef(DDExternalPredicate, NewExternalState#est.bs),
                     {succeed, NewBindings} =
@@ -415,7 +418,8 @@ prove_external_ontology_predicate({_Atom,
                                          ParentOntologyState#est{cps = [Cp | ParentCps],
                                                                  bs = NewBindings,
                                                                  vn = NewVn});
-                {fail, #est{} = _NewExternalState} ->
+                {fail, #est{} = NewExternalState} ->
+                    bbs_agent:store_ontology_state_on_namespace(ExternalOntologyNameSpace, NewExternalState),
                     erlog_int:fail(ParentOntologyState);
                 OtherResult ->
                     ?INFO_MSG("Unexpected result : ~p", [OtherResult]),
@@ -538,10 +542,15 @@ prove(NameSpace, Predicate) when is_binary(NameSpace) ->
     ?INFO_MSG("Proving :~p", [{NameSpace, Predicate}]),
     case bbs_agent:get_ontology_state_from_namespace(NameSpace) of
         #est{} = Kb ->
-            prove(Kb, Predicate);
+            case erlog_int:prove_goal(Predicate, Kb) of
+                fail ->
+                    fail;
+                {succeed, State} ->
+                    bbs_agent:store_ontology_state_on_namespace(NameSpace, State),
+                    {succeed, State}
+            end;
         undefined ->
-            ?WARNING_MSG("No kb :~p ", [{NameSpace, Predicate, erlang:process_info(self(), dictionary)}]),
+            ?WARNING_MSG("No kb :~p ",
+                         [{NameSpace, Predicate, erlang:process_info(self(), dictionary)}]),
             fail
-    end;
-prove(Kb, Predicate) ->
-    erlog_int:prove_goal(Predicate, Kb).
+    end.
