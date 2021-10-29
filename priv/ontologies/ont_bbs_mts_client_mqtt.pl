@@ -1,48 +1,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-action(initialize(AgentId, Parent, NameSpace, Params),
+action(initialize(AgentId, Parent, Node, Params),
     [
     log(info,"Initialising mqtt client",[]),
     assert(me(AgentId)),
     assert(parent(Parent)),
     "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:mqtt")),
-
-
-    log(info,"Connecting",[]),
-    connect([], AgentId, Pid),
-        log(info,"ClientId   ~p",[ClientId]),
-
-    mqtt_subscribe(Pid, "test_topic")
+    goal(connection(Domain, Port, ClientId, Pid, [])),
+    log(info, "Domain ~p    Port ~p    ClientId ~p    Pid ~p", [Domain, Port, ClientId, Pid])
     ],
-    initialized(AgentId, Parent, NameSpace, Params)).
+    initialized(AgentId, Parent, Node, Params)).
 
-initialize(AgentId, Parent, NameSpace, Params) :-
-    assert(initialized(AgentId, Parent, NameSpace, Params)).
+initialize(AgentId, Parent, Node, Params) :-
+    assert(initialized(AgentId, Parent, Node, Params)).
 
 
-%% ClientId is unique per Ontology, this may not reflect reality where two clients connecting on two servers using same naming
-%% Conventions can end up with two clients with different hosts but same clientId
-action(assert(client(Options, Pid)), [new_client(Options, Pid), options_processed(Pid, Options)], client(Options, Pid)).
+%%connection(domain, port, ClientId, Pid).
+%cc(CcId, Agent, Node, Domain, ClientId, TransportOntology)
 
-options_processed(Pid, [host(Host) | OtherOptions]) :-
-    assert(host(Pid, Host)),
-    options_processed(OtherOptions).
-
-options_processed(Pid, [port(Port) | OtherOptions]) :-
-    assert(port(Pid, Port)),
-    options_processed(OtherOptions).
-
-options_processed(Pid, [clientid(ClientId) | OtherOptions]) :-
-    assert(clientid(Pid, ClientId)),
-    options_processed(OtherOptions).
-
-action(assert(connected(Pid)),
-    [connect(Pid)],
-    connected(pid(Pid))).
-
-action(assert(connected(Pid)),
-    [clientid(Pid, ClientId), connect(Pid)],
-    connected(clientid(ClientId))).
+action(assert(connection(Domain, Port, ClientId, Pid, Connection_options)), 
+        [
+            log(info,"Prolog connect", []),
+            connect(Domain, Port, ClientId, Pid, Connection_options)
+        ], 
+    connection(Domain, Port, ClientId, Pid, Connection_options)).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% new mqtt cc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

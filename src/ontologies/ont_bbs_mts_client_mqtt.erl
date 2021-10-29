@@ -10,7 +10,6 @@
 
 -author("yan").
 
--include("bbs.hrl").
 -include("utils.hrl").
 
 -include_lib("erlog/include/erlog_int.hrl").
@@ -20,7 +19,7 @@
 
 -define(ERLANG_PREDS,
     [
-        {{connect, 3}, ?MODULE, connect_predicate},
+        {{connect, 5}, ?MODULE, connect_predicate},
         {{connect_async, 2}, ?MODULE, connect_async_predicate},
         {{mqtt_publish, 3}, ?MODULE, mqtt_publish_predicate},
         {{mqtt_subscribe, 2}, ?MODULE, mqtt_subscribe_predicate},
@@ -43,33 +42,49 @@ external_predicates() ->
 %new_client_predicate({_, Host, Port, PidClientOut}, Next0, #est{bs = Bs} = St) ->
 
 
-
-
-connect_predicate({_, OptionsList, ClientID, PidClientOut}, Next0, #est{bs = Bs} = St) ->
-    DOptionList = erlog_int:dderef(OptionsList, Bs),
-    DClientID = erlog_int:dderef(ClientID, Bs),
-    DPidClientOut = erlog_int:dderef(PidClientOut, Bs),
-    case erlog:vars_in(DOptionList) of
+connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options}, Next0, #est{bs = Bs0} = St) ->         
+    ?DEBUG("Conneting to mqtt", []),
+    [DClientId, DConnection_options] = erlog_int:dderef([ClientId, Connection_options], Bs0),
+    
+    case erlog:vars_in(DConnection_options) of
         [] ->
+            {ClientDomain, Bs1} = case erlog_int:dderef(Domain, Bs0) of
+                {_} ->
+                    DBs = erlog_int:add_binding(Domain, "localhost", Bs0),
+                    {"localhost", DBs};
+                Domain when is_binary(Domain) ->
+                    {binary_to_list(Domain), Bs0};
+                _ -> erlog_int:fail(St)
+                end,
+            {ClientPort, Bs2} = case erlog_int:dderef(Port, Bs1) of 
+                    {_} -> 
+                        PBs = erlog_int:add_binding(Port, 1883, Bs1),
+                        {1883, PBs};
+                    Port when is_integer(Port) ->
+                        {Port, Bs1};
+                    _ -> erlog_int:fail(St)
+                    end, 
+    
             AgentPid = self(),
-            ClientIdEntry = case DClientID of
+            ClientIdEntry = case DClientId of
                                 {_} -> [];
-                                _ ->  [{clientid, DClientID}]
+                                _ ->  [{clientid, DClientId}]
                             end,
+           
             Options2 = lists:keymerge(1, [
                 {msg_handler, #{disconnected => fun disconnected/1, publish => {?MODULE, msg_handler,[AgentPid]}}},
-                {owner, AgentPid}] ++ ClientIdEntry, OptionsList),
+                {owner, AgentPid}, {host, ClientDomain}, {port, ClientPort}] ++ ClientIdEntry, DConnection_options),
 
             case gen_statem:start(emqtt, [Options2], []) of
                 {ok, PidClient} ->
                     case emqtt:connect(PidClient) of
                         {ok, _Props} ->
                             FinalClientID = proplists:get_value(clientid, gen_statem:call(PidClient, info)),
-                            case erlog_int:unify(FinalClientID, DClientID, Bs) of
+                            case erlog_int:unify(FinalClientID, ClientId, Bs2) of
                                 {succeed, NewBs} ->
                                     %% This should always be true
                                     ?INFO_MSG("Client connected ~p",[FinalClientID]),
-                                    erlog_int:unify_prove_body(DPidClientOut, PidClient, Next0, St#est{bs = NewBs});
+                                    erlog_int:unify_prove_body(Pid, PidClient, Next0, St#est{bs = NewBs});
                                 _ ->
                                     emqtt:disconnect(PidClient),
                                     erlog_int:fail(St)
@@ -82,9 +97,13 @@ connect_predicate({_, OptionsList, ClientID, PidClientOut}, Next0, #est{bs = Bs}
                     ?INFO_MSG("Error strating mqtt client ~p",[_Error]),
                     erlog_int:fail(St)
             end;
+
         _ ->
             erlog_int:fail(St)
-    end.
+    end;
+
+connect_predicate({_, _Domain, _Port, _ClientId, _, _Connection_options}, _Next0, St) ->
+    erlog_int:fail(St).
 
 msg_handler(Msg, Pid) ->
     ?INFO_MSG("Processing publish ~p to ~p",[Msg, Pid]),
@@ -163,11 +182,12 @@ perform_connect(OptionsList, AgentName, ParentPid) ->
 
             ok
     end.
-connected_predicate({_, BrokerHost, ClientID}, Next0, #est{bs = Bs} = St) ->
-    DBrokerHost = erlog_int:dderef(BrokerHost, Bs),
-    case emqtt:connected() of
-        true -> ok
-    end.
+% TBD
+% connected_predicate({_, BrokerHost, ClientID}, Next0, #est{bs = Bs} = St) ->
+%     DBrokerHost = erlog_int:dderef(BrokerHost, Bs),
+%     case emqtt:connected() of
+%         true -> ok
+%     end.
 
 %%------------------------------------------------------------------------------
 %% @doc

@@ -3,7 +3,10 @@
 action(initialize(AgentId, Parent, NameSpace, Params), [
     registered(BubbleName),
     "bbs:agent"::react_on(info_event, child_down(AnyChild, Reason), "bbs:bubble", signal_process_exit(AnyChild, Reason),[]),
-    child("test_bob",[ontology("bbs:agent", [], bbs_db_ets), ontology("bbs:mts:client:registry", [], bbs_db_ets)])
+    child("test_bob",[
+        ontology("bbs:agent", [], bbs_db_ets), 
+        ontology("bbs:mts:client:registry", [], bbs_db_ets),
+        ontology("bbs:mts:client:mqtt", [], bbs_db_ets)])
     ],
         initialized(AgentId, Parent, NameSpace, Params)).
 

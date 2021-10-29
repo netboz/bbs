@@ -27,7 +27,7 @@ initialize(AgentId, Parent, NameSpace, Params) :-
 %% cast -> async_event
 %% info -> info_event
 
-action(process_agent_event(Type, Message), [log(info,"Processing event : ~p",[{Type, Message}])], agent_event_processed(Type, Message)).
+action(process_agent_event(Type, Message), [log(debug,"Processing event : ~p",[{Type, Message}])], agent_event_processed(Type, Message)).
 
 %% @doc: process_agent_events(+Type, +Message)
 %% Effectively execute stims and delete needed ones
@@ -104,15 +104,20 @@ do_process_stim(StimOnt, StimMessage) :-
 
 action("bbs:mts:client:registry"::subscribe(CcId),[], subscribed(CcId)).
 action(TransportOntology::subscribe(CcId), [], subscribed(CcId, TransportOntology)).
+action(TransportOntology::subscribe(CcId, Domain), [], subscribed(CcId, Domain, TransportOntology)).
 
 subscribed(CcId) :-
     subscribed(CcId, "bbs:mts:client:registry").
-subscribed(CcId, Ontology) :-
+subscribed(CcId, TransportOntology) :-
     me(Me),
     node(Node),
-    Ontology::cc(CcId, Me, Node, Ontology).
+    TransportOntology::cc(CcId, Me, Node, TransportOntology).
+subscribed(CcId, Domain, ClientId, TransportOntology) :-
+    me(Me),
+    node(Node),
+    TransportOntology::cc(CcId, Me, Node, Domain, ClientId).
 
-
+%cc(CcId, Agent, Node, Domain, ClientId, TransportOntology)
 %% @doc: sent(CcId::string(), Payload:: term())
 %% This action sends Payload content on communication channel CcId
 
