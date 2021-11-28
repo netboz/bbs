@@ -7,6 +7,7 @@
 
 -record(agent, {
 	name :: binary(), 
-	startup_ontologies = [] :: list(), 
 	tree_node :: term(), 
-	parent :: binary()}).
+	parent :: binary(),
+	startup_ontologies = [] :: list()
+	}).
