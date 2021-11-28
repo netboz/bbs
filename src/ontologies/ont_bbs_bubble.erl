@@ -48,7 +48,7 @@ register_bubble_predicate({_Atom, NodeName}, Next0, #est{bs = Bs} = St) ->
                 NodeName
         end,
     case ?HORDEREG:update_value(?BBS_BUBBLES_REG,
-                                {get(tree_node), get(agent_name)},
+                                {reg, get(tree_node), get(agent_name)},
                                 fun(_oldval) -> DNodeName end)
     of
         {DNodeName, _} ->
