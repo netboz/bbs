@@ -40,7 +40,7 @@ callback_mode() ->
 %% initialize. To ensure a synchronized start-up procedure, this
 %% function does not return until Module:init/1 has returned.
 start_link(#agent{} = AgentSpecs, TreeNode) ->
-     gen_statem:start({via, ?HORDEREG, {?BBS_BUBBLES_REG, {TreeNode, AgentSpecs#agent.name}}}, 
+     gen_statem:start({via, ?HORDEREG, {?BBS_BUBBLES_REG, {reg, TreeNode, AgentSpecs#agent.name}}}, 
         ?MODULE, AgentSpecs#agent{tree_node = TreeNode}, []).
 
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
