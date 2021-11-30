@@ -35,7 +35,7 @@ defmodule Bbs.MixProject do
       {:lager, ">= 0.0.0", override: true},
       {:horde, "~> 0.8.4"},
       {:erlog, git: "git@bitbucket.org:netboz/erlog_bbs.git", branch: "master"},
-      {:uuid, git: "https://github.com/avtobiff/erlang-uuid.git", branch: "master"},
+      {:uuid, git: "https://github.com/okeuday/uuid.git", branch: "master"},
       {:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"},
       ## For tests
       {:mix_erlang_tasks, "0.1.0"}
