@@ -44,7 +44,7 @@ start(_StartType, _StartArgs) ->
            startup_ontologies = StartUpOntologies},
   Root_bubble_specs =
     #{id => root_bubble,
-      start => {bbs_agent, start_link, [MotherBubChildSpecs, 0]},
+      start => {bbs_agent, start_link, [MotherBubChildSpecs, uuid:get_v4_urandom()]},
       restart => permanent,
       shutdown => infinity,
       type => worker,

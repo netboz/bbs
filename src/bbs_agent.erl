@@ -47,11 +47,14 @@ start_link(#agent{} = AgentSpecs, TreeNode) ->
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init(#agent{name = undefined} = Agent) ->
-    init(Agent#agent{name = uuid:uuid4()});
+    init(Agent#agent{name = uuid:get_v4_urandom()});
 init(#agent{name = AgentName, parent = Parent, tree_node = TreeNode} = AgentSpecs) when is_binary(AgentName) ->
     ?INFO_MSG("Initialising Agent :~p   PID :~p TreeNode :~p", [AgentSpecs, self(), TreeNode]),
     %% Right now we are trapping exit to manage child processes, even if we don't have one
     process_flag(trap_exit, true),
+
+    %% Initialise randomness for this process
+    quickrand:seed(),
 
     %% We store agent name in process dictionary for easy retrieval during predicate proving process. Ideally, agent name,
     %% and parent should be managed only with bbs:agent ontology, and internally like this in process dict, but to avoid
