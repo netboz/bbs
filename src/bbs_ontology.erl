@@ -226,10 +226,44 @@ load_built_in_predicates(Built_in_predicates, #est{} = Est) ->
 
 load_prolog_predicates([], Est) ->
     {ok, Est};
+
+load_prolog_predicates([{file, App, File} | OtherPredicates], #est{} = Est) ->
+    BaseDir = erlang:pwd(),
+    PrivDir =
+        case code:priv_dir(App) of
+            {error, _Bad_name} ->
+                % This occurs when not running as a release; e.g., erl -pa ebin
+                % Of course, this will not work for all cases, but should account
+                % for most
+                "priv";
+            SomeDir ->
+                % In this case, we are running in a release and the VM knows
+                % where the application (and thus the priv directory) resides
+                % on the file system
+                SomeDir
+        end,
+    FullDir = filename:nativename(filename:join([BaseDir, PrivDir, "ontologies", File])),
+    try erlog_file:consult(FullDir,Est)
+    of
+        {ok, #est{} = NewEst} ->
+            ?INFO_MSG("Consulted : ~p",
+                      [filename:nativename(
+                           filename:join([PrivDir, "ontologies", File]))]),
+            load_prolog_predicates(OtherPredicates, NewEst);
+        Other ->
+            ?WARNING_MSG("Unexpected result while loading predicates from file :~p",
+                         [{File, Other}]),
+            {error, failed_consulting_predicates_from_file}
+    catch
+        M:E ->
+            ?ERROR_MSG("ERROR loading predicates from file :~p ~p", [M, E]),
+            {error, failed_consulting_predicates_from_file}
+    end;
+
 load_prolog_predicates([{file, File} | OtherPredicates], #est{} = Est) ->
     PrivDir =
         case code:priv_dir(bbs) of
-            {error, bad_name} ->
+            {error, _Bad_name} ->
                 % This occurs when not running as a release; e.g., erl -pa ebin
                 % Of course, this will not work for all cases, but should account
                 % for most
@@ -272,6 +306,9 @@ load_prolog_predicates([{text, TextualPrologPredicate} | OtherPredicates],
 load_prolog_predicates([Unk | OtherPredicates], Db) ->
     ?WARNING_MSG("Unrecognized intialisation predicate :~p", [Unk]),
     load_prolog_predicates(OtherPredicates, Db).
+
+
+
 
 %%------------------------------------------------------------------------------
 %% @doc
