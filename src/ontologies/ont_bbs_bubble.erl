@@ -28,7 +28,6 @@
          {{terminate_child, 1}, ?MODULE, terminate_child_predicate},
          {{child, 1}, ?MODULE, child_predicate}]).
 
--on_load(on_load/0).
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
@@ -36,10 +35,6 @@
 %%
 %% @end
 %%------------------------------------------------------------------------------
-
-
-on_load() ->
-    quickrand:seed().
 
 external_predicates() ->
     ?ERLANG_PREDS.
