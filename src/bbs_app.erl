@@ -62,8 +62,7 @@ stop(_State) ->
 %% internal functions
 
 default_root_bubble_ontologies() ->
-  [{ontology, <<"bbs:brain_tests:data">>, [], bbs_db_ets},
-   {ontology, <<"bbs:brain_tests">>, [], bbs_db_ets},
+  [
    {ontology, <<"bbs:agent">>, [], bbs_db_ets},
    {ontology, <<"bbs:mts:client:registry">>, [], bbs_db_ets},
    {ontology,
