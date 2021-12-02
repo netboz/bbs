@@ -61,11 +61,10 @@ register_bubble_predicate({_Atom, NodeName}, Next0, #est{bs = Bs} = St) ->
 
 %% @doc spawn a child locally on the AP. AgSpecs contains Agent descripion
 spawn_child_predicate({_Atom, {agent, Name, Onts}}, Next0, #est{} = St) ->
-    Me = get(agent_name),
     ChildrenNode = get(children_node),
     AgentSpecs =
         #agent{name = Name,
-               parent = Me,
+               parent = ChildrenNode,
                startup_ontologies = Onts},
     case ?HORDESUP:start_child(?BBS_BUBLES_SUP, child_specs(AgentSpecs, ChildrenNode)) of
         {ok, Pid} ->

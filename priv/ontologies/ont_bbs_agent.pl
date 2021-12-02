@@ -12,7 +12,7 @@ initialize(AgentId, Parent, NameSpace, Params) :-
     log(info,"Waking up agent :~p",[AgentId]),
      new_knowledge_base("bbs:agent:event_handlers"),
      new_knowledge_base("bbs:agent:stims"),
-     new_knowledge_base("bbs:agent:ccs"),
+     new_knowledge_base("bbs:agent:ccs", erlog_db_dict),
      assert(me(AgentId)),
      assert(parent(Parent)),
      assert(node(Node)),
@@ -99,23 +99,21 @@ do_process_stim(StimOnt, StimMessage) :-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc: cc(CcId:string(), Ontology:string())
-%% This action the create Communication Channels (CCs) locally
+%% @doc: cc(CcId:IN:string())
+%% This action the create Communication Channels (CCs) locally using default "bbs:mts:client:registry" ontology
 
 action("bbs:mts:client:registry"::subscribe(CcId),[], subscribed(CcId)).
-action(TransportOntology::subscribe(CcId), [], subscribed(CcId, TransportOntology)).
-action(TransportOntology::subscribe(CcId, Domain), [], subscribed(CcId, Domain, TransportOntology)).
+action(TransportOntology::goal(subscribe(CcId)), [], subscribed(CcId, TransportOntology)).
+action(TransportOntology::goal(subscribe(CcId, Domain)), [], subscribed(CcId, Domain, TransportOntology)).
 
 subscribed(CcId) :-
     subscribed(CcId, "bbs:mts:client:registry").
 subscribed(CcId, TransportOntology) :-
-    me(Me),
-    node(Node),
-    TransportOntology::cc(CcId, Me, Node, TransportOntology).
-subscribed(CcId, Domain, ClientId, TransportOntology) :-
-    me(Me),
-    node(Node),
-    TransportOntology::cc(CcId, Me, Node, Domain, ClientId).
+    TransportOntology::subscribed(CcId).
+subscribed(CcId, Domain, TransportOntology) :-
+    TransportOntology::subscribed(CcId, Domain).
+subscribed(CcId, LookedAgent, LookedNode, Domain, TransportOntology) :-
+    "bbs:agent:ccs"::cc(CcId, LookedAgent, LookedNode, Domain, TransportOntology).
 
 %cc(CcId, Agent, Node, Domain, ClientId, TransportOntology)
 %% @doc: sent(CcId::string(), Payload:: term())
@@ -123,7 +121,9 @@ subscribed(CcId, Domain, ClientId, TransportOntology) :-
 
 action(TransportOntology::send(CcId, Payload),[
     log(info, "Before CC",[]),
-    "bbs:agent:ccs"::cc(CcId, _, _, TransportOntology),     log(info, "after CC",[])], sent(CcId, Payload)).
+    "bbs:agent:ccs"::cc(CcId, _, _, TransportOntology),     
+    log(info, "after CC",[])], 
+    sent(CcId, Payload)).
 
 action(process_incoming_data(CcId, Data),
     [],
