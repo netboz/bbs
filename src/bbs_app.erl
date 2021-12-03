@@ -65,7 +65,7 @@ default_root_bubble_ontologies() ->
   [
    {ontology, <<"bbs:agent">>, [], bbs_db_ets},
    {ontology, <<"bbs:mts:client:registry">>, [], bbs_db_ets},
-   {ontology, <<"bbs:bubble">>, [{bubble_name, <<"JEanne">>},{bubble_children, [{child, <<"test_bob">>,[
+   {ontology, <<"bbs:bubble">>, [{bubble_children, [{child, <<"test_bob">>,[
                                                       {ontology, <<"bbs:agent">>, [], bbs_db_ets}, 
                                                       {ontology, <<"bbs:mts:client:registry">>, [], bbs_db_ets}]
                                                       %{ontology, <<"bbs:mts:client:mqtt">>, [], bbs_db_ets}

@@ -119,6 +119,29 @@ validate_text_pred({string, StrPred}) ->
         Error ->
             Error
     end;
+validate_text_pred({file, App, Filename}) ->
+    BaseDir = c:pwd(),
+    PrivDir =
+        case code:priv_dir(App) of
+            {error, bad_name} ->
+                % This occurs when not running as a release; e.g., erl -pa ebin
+                % Of course, this will not work for all cases, but should account
+                % for most
+                "priv";
+            SomeDir ->
+                % In this case, we are running in a release and the VM knows
+                % where the application (and thus the priv directory) resides
+                % on the file system
+                SomeDir
+        end,
+    AbsPath = filename:join([BaseDir, PrivDir, "ontologies", Filename]),
+    case erlog_io:scan_file(AbsPath) of
+        {ok, _Terms} ->
+            ok;
+        Error ->
+            lager:info("Parse Error :~p", [Error]),
+            Error
+    end;    
 validate_text_pred({file, Filename}) ->
     PrivDir =
         case code:priv_dir(bbs) of
@@ -228,7 +251,7 @@ load_prolog_predicates([], Est) ->
     {ok, Est};
 
 load_prolog_predicates([{file, App, File} | OtherPredicates], #est{} = Est) ->
-    BaseDir = erlang:pwd(),
+    BaseDir = c:pwd(),
     PrivDir =
         case code:priv_dir(App) of
             {error, _Bad_name} ->
