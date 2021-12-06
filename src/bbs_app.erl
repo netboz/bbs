@@ -9,8 +9,9 @@
 
 -behaviour(application).
 
--export([start/2, stop/1, hostname/0]).
--export([new_bubble/1]).
+-export([start/2, stop/1]).
+-export([new_bubble/1, hostname/0]).
+-export([get_node/1, get_parent/1, get_tree/1]).
 
 start(_StartType, _StartArgs) ->
   register(bbs, self()),
@@ -44,7 +45,7 @@ start(_StartType, _StartArgs) ->
            startup_ontologies = StartUpOntologies},
   Root_bubble_specs =
     #{id => root_bubble,
-      start => {bbs_agent, start_link, [MotherBubChildSpecs, uuid:get_v4_urandom()]},
+      start => {bbs_agent, start_link, [MotherBubChildSpecs, <<"root">>]},
       restart => permanent,
       shutdown => infinity,
       type => worker,
@@ -75,6 +76,35 @@ default_root_bubble_ontologies() ->
 new_bubble(#agent{} = Bubble_specs) ->
   gen_server:cast(bbs_lobby, {new_bubble, Bubble_specs}).
 
+get_parent(NodeId) ->
+  ?HORDEREG:select(?BBS_BUBBLES_REG,
+                   [{{{reg, '$1', '$2'}, '_', NodeId}, [], [{{'$1', '$2', NodeId}}]}]).
+
+get_node(NodeId) ->
+  ?HORDEREG:select(?BBS_BUBBLES_REG,
+                   [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}]).
+
+get_tree(NodeId) ->
+  get_tree(NodeId, []).
+
+get_tree(NodeId, Acc) ->
+  case ?HORDEREG:select(?BBS_BUBBLES_REG,
+                        [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}])
+  of
+    [] ->
+      %% Empty node
+      Acc;
+    ChildList ->
+      [lists:foldl(fun ({_, _AgentName, undefined} = Node, Acc) ->
+                        maps:update(children, maps:get(children, Acc, []) ++ [Node], Acc);
+                      ({_, _AgentName, CNodeId} = Node, Acc) ->
+                        maps:update(children,
+                                    maps:get(children, Acc, []) ++ get_tree(CNodeId),
+                                    Acc)
+                  end,
+                  #{name => NodeId, children => []},
+                  ChildList)]
+  end.
 %% internal functions
 
 %% Unit tests
