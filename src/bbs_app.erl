@@ -85,9 +85,9 @@ get_node(NodeId) ->
                    [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}]).
 
 get_tree(NodeId) ->
-  get_tree(NodeId, []).
+  get_tree(NodeId, [], 0).
 
-get_tree(NodeId, Acc) ->
+get_tree(NodeId, Acc, Depth) ->
   case ?HORDEREG:select(?BBS_BUBBLES_REG,
                         [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}])
   of
