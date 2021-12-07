@@ -99,12 +99,13 @@ get_tree(NodeId, Acc, Depth) ->
                         maps:update(children, maps:get(children, Acc, []) ++ [Node], Acc);
                       ({_, _AgentName, CNodeId} = Node, Acc) ->
                         maps:update(children,
-                                    maps:get(children, Acc, []) ++ get_tree(CNodeId),
+                                    maps:get(children, Acc, []) ++ get_tree(CNodeId, [], Depth +1),
                                     Acc)
                   end,
-                  #{name => NodeId, children => []},
+                  #{name => NodeId, depth => Depth, children => []},
                   ChildList)]
   end.
+
 %% internal functions
 
 %% Unit tests
