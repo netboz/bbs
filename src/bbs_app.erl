@@ -11,7 +11,7 @@
 
 -export([start/2, stop/1]).
 -export([new_bubble/1, hostname/0]).
--export([get_node/1, get_parent/1, get_tree/1]).
+-export([get_node/1, get_parent/1, get_tree/1, dump_tree/0]).
 
 start(_StartType, _StartArgs) ->
   register(bbs, self()),
@@ -45,7 +45,7 @@ start(_StartType, _StartArgs) ->
            startup_ontologies = StartUpOntologies},
   Root_bubble_specs =
     #{id => root_bubble,
-      start => {bbs_agent, start_link, [MotherBubChildSpecs, <<"root">>]},
+      start => {bbs_agent, start_link, [MotherBubChildSpecs, <<"root_node">>]},
       restart => permanent,
       shutdown => infinity,
       type => worker,
@@ -85,26 +85,24 @@ get_node(NodeId) ->
                    [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}]).
 
 get_tree(NodeId) ->
-  get_tree(NodeId, [], 0).
+get_tree(NodeId,[],1).
 
+
+get_tree(nil, Acc, Depth) ->
+  [];
 get_tree(NodeId, Acc, Depth) ->
-  case ?HORDEREG:select(?BBS_BUBBLES_REG,
-                        [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}])
-  of
+  case get_node(NodeId) of
     [] ->
       %% Empty node
       Acc;
     ChildList ->
-      [lists:foldl(fun ({_, _AgentName, nil} = Node, Acc) ->
-                        maps:update(children, maps:get(children, Acc, []) ++ [Node], Acc);
-                      ({_, _AgentName, CNodeId} = Node, Acc) ->
-                        maps:update(children,
-                                    maps:get(children, Acc, []) ++ get_tree(CNodeId, [], Depth +1),
-                                    Acc)
-                  end,
-                  #{name => NodeId, depth => Depth, children => []},
-                  ChildList)]
-  end.
+      lists:map(fun ({Node, Name, ChildNode}) -> #{name => Name, depth => Depth, node => NodeId, children => 
+        get_tree(ChildNode, [], Depth + 1)} end, ChildList)
+
+    end.
+
+dump_tree() ->
+  ?HORDEREG:select(?BBS_BUBBLES_REG, [{{'$1', '_', '$2'}, [], [{{'$1', '$2'}}]}]).
 
 %% internal functions
 
