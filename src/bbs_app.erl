@@ -95,7 +95,7 @@ get_tree(NodeId, Acc, Depth) ->
       %% Empty node
       Acc;
     ChildList ->
-      [lists:foldl(fun ({_, _AgentName, undefined} = Node, Acc) ->
+      [lists:foldl(fun ({_, _AgentName, nil} = Node, Acc) ->
                         maps:update(children, maps:get(children, Acc, []) ++ [Node], Acc);
                       ({_, _AgentName, CNodeId} = Node, Acc) ->
                         maps:update(children,
