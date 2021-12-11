@@ -65,7 +65,7 @@ spawn_child_predicate({_Atom, {agent, Name, Onts}}, Next0, #est{} = St) ->
     BubbleName = get(agent_name),
     AgentSpecs =
         #agent{name = Name,
-               parent = agent_name,
+               parent = BubbleName,
                startup_ontologies = Onts},
     case ?HORDESUP:start_child(?BBS_BUBLES_SUP, child_specs(AgentSpecs, ChildrenNode)) of
         {ok, Pid} ->
