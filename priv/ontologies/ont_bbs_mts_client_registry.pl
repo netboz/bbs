@@ -13,9 +13,6 @@ action(assert(initialized(Ns, Ag, Params)),
 
     %% Register this ontology as being able to send message
     "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:registry")),
-
-    subscribe("test")
-    %"bbs:agent"::goal(sent("test", "Hello World"))
     ],
     initialized(Ag, Node, Ns, Params)).
 
@@ -26,14 +23,22 @@ process_incoming_registry_payload(Payload) :-
 
 
 
-
 subscribed(CcId) :-
     me(Me),
     node(Node),
     cc(CcId, Me, Node).
 
-subscribed(CcId, Domain) :-
-    connection(Domain, _, _, Pid, _),
-    subscribed(CcId, Pid).
 
-    
+action(update_aid(Key, Value, OldValue),[log(info," checking for update",[]), key(Key)], aid(Key, Value)).
+action(set_aid(Key, Value),[log(info, "Setting aid",[])], aid(Key, Value)).
+
+update_aid(Key, Value, OldValue) :-
+    log(info," Updating",[]),
+    update_registry_entry(Key, Value),
+    "bbs:agent"::goal(stim_processed("bbs:mts:client:registry", aid_updated(Key, OldValue, Value))).
+
+set_aid(Key, Value) :-
+    log(info," New Aid",[]),
+    new_registry_entry(Key, Value),
+    "bbs:agent"::goal(stim_processed("bbs:mts:client:registry", new_aid(Key, Value))).
+

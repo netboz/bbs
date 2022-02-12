@@ -68,8 +68,11 @@ default_root_bubble_ontologies() ->
    {ontology, <<"bbs:mts:client:registry">>, [], bbs_db_ets},
    {ontology, <<"bbs:bubble">>, [{bubble_children, [{child, <<"test_bob">>,[
                                                       {ontology, <<"bbs:agent">>, [], bbs_db_ets}, 
-                                                      {ontology, <<"bbs:mts:client:registry">>, [], bbs_db_ets}]
-                                                      %{ontology, <<"bbs:mts:client:mqtt">>, [], bbs_db_ets}
+                                                      {ontology, <<"bbs:mts:client:registry">>, [], bbs_db_ets},
+                                                      {ontology, <<"bbs:mts:client:mqtt">>, [
+                                                        {clients, [{connection, <<"localhost">>, 1883, <<"root">>, [], [{subscription, <<"test_bob">>}]}]}], 
+                                                        bbs_db_ets}
+                                                      ]
                                                     }]}], bbs_db_ets}].  
 %% API
 
@@ -85,8 +88,7 @@ get_node(NodeId) ->
                    [{{{reg, NodeId, '$2'}, '_', '$3'}, [], [{{NodeId, '$2', '$3'}}]}]).
 
 get_tree(NodeId) ->
-get_tree(NodeId,[],1).
-
+  get_tree(NodeId,[],1).
 
 get_tree(nil, Acc, Depth) ->
   [];

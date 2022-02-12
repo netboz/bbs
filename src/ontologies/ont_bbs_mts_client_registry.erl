@@ -19,14 +19,18 @@
 -define(NAMESPACE, <<"bbs:mts:client:registry">>).
 -define(ERLANG_PREDS,
         [
-            {{subscribe, 1}, ?MODULE, subsribe_predicate}, 
-            {{cc, 4}, ?MODULE, cc_predicate},
-            {{send, 2}, ?MODULE, send_predicate}
-        ]).
+         {{key, 1}, ?MODULE, key_predicate},
+         {{aid, 2}, ?MODULE, aid_predicate},
+         {{new_registry_entry, 2}, ?MODULE, new_registry_entry_predicate},
+         {{update_registry_entry, 2}, ?MODULE, update_registry_entry_predicate},
+         {{subscribe, 1}, ?MODULE, subsribe_predicate},
+         {{cc, 4}, ?MODULE, cc_predicate},
+         {{send, 2}, ?MODULE, send_predicate}]).
 
 %% API
 -export([external_predicates/0]).
--export([subsribe_predicate/3, send_predicate/3, cc_predicate/3]).
+-export([key_predicate/3, aid_predicate/3, update_registry_entry_predicate/3, new_registry_entry_predicate/3, 
+    subsribe_predicate/3, send_predicate/3, cc_predicate/3]).
 
 external_predicates() ->
     ?ERLANG_PREDS.
@@ -58,9 +62,14 @@ send_predicate({_, CcId, Payload}, Next0, #est{bs = Bs} = St) ->
                 {_} ->
                     erlog_int:fail(St);
                 DPayload ->
-                    lists:foreach(fun(Pid) ->  ?INFO_MSG("Sending to pid :~p", [Pid]), Pid ! {registry_delivery, DPayload} end,
-                                  ?HORDEREG:select(?BBS_BUBBLES_REG, [{{{cc, DCcId, '_', '_'}, '$1', '_'}
-                                    , [], ['$1']}])),
+                    lists:foreach(fun(Pid) ->
+                                     ?INFO_MSG("Sending to pid :~p", [Pid]),
+                                     Pid ! {registry_delivery, DPayload}
+                                  end,
+                                  ?HORDEREG:select(?BBS_BUBBLES_REG,
+                                                   [{{{cc, DCcId, '_', '_'}, '$1', '_'},
+                                                     [],
+                                                     ['$1']}])),
                     erlog_int:prove_body(Next0, St)
             end
     end.
@@ -122,6 +131,130 @@ cc_predicate2(DCcId,
             erlog_int:prove_body(Next0, St#est{bs = NewBs, cps = [Cp | Cps]});
         _ ->
             ?INFO_MSG("NOT unified", []),
+            erlog_int:fail(St)
+    end.
+
+key_predicate({_, Key}, Next0, #est{bs = Bs} = St) ->
+    DKey = erlog_int:dderef(Key, Bs),
+    PKey = query_param(1, DKey),
+    SelectedKeys =
+        ?HORDEREG:select(?BBS_BUBBLES_REG, [{{{aid, PKey}, '_', '_'}, [], [PKey]}]),
+    ?INFO_MSG("Selected Aids :~p", [SelectedKeys]),
+    key_predicate_2(DKey, Next0, St, SelectedKeys).
+
+key_predicate_2(_DKey, _Next0, St, []) ->
+    erlog_int:fail(St);
+key_predicate_2(DKey, Next0, #est{bs = Bs, vn = Vn, cps = Cps} = St, [RKey|OtherKeys]) ->
+      case erlog_int:unify(DKey, RKey, Bs) of
+                {succeed, NewBs} ->
+                    FailFun =
+                        fun(#cp{next = NextF,
+                                bs = Bs0,
+                                vn = Vnf},
+                            LCps,
+                            Lst) ->
+                           key_predicate_2(DKey,
+                                           NextF,
+                                           Lst#est{cps = LCps,
+                                                   bs = Bs0,
+                                                   vn = Vnf + 1},
+                                           OtherKeys)
+                        end,
+                    Cp = #cp{type = compiled,
+                             data = FailFun,
+                             next = Next0,
+                             bs = Bs,
+                             vn = Vn},
+                    erlog_int:prove_body(Next0, St#est{bs = NewBs, cps = [Cp | Cps]});
+                _ ->
+                    erlog_int:fail(St)
+    end.
+
+
+
+
+aid_predicate({_, Key, Value}, Next0, #est{bs = Bs} = St) ->
+    ?INFO_MSG("AID Pred ~p   ~p", [Key, Value]),
+    [DKey, DVal] = erlog_int:dderef([Key, Value], Bs),
+    PKey = query_param(1, DKey),
+    PVal = query_param(2, DVal),
+    SelectedAids =
+        ?HORDEREG:select(?BBS_BUBBLES_REG, [{{{aid, PKey}, '_', PVal}, [], [{{PKey, PVal}}]}]),
+    ?INFO_MSG("Selected Aids :~p", [SelectedAids]),
+    aid_predicate_2(DKey, DVal, Next0, St, SelectedAids).
+
+aid_predicate_2(_DKey, _DVal, _Next0, St, []) ->
+        ?INFO_MSG("Failling ~p   ~p", [_DKey, _DVal]),
+    erlog_int:fail(St);
+aid_predicate_2(DKey,
+                DVal,
+                Next0,
+                #est{bs = Bs,
+                     vn = Vn,
+                     cps = Cps} =
+                    St,
+                [{RKey, RVal} | Tail]) ->
+        ?INFO_MSG("Browsing  :~p", [[{RKey, RVal} | Tail]]),
+
+    case erlog_int:unify(DKey, RKey, Bs) of
+        {succeed, NewBs} ->
+            case erlog_int:unify(DVal, RVal, NewBs) of
+                {succeed, NewBs2} ->
+                    FailFun =
+                        fun(#cp{next = NextF,
+                                bs = Bs0,
+                                vn = Vnf},
+                            LCps,
+                            Lst) ->
+                           aid_predicate_2(DKey,
+                                           DVal,
+                                           NextF,
+                                           Lst#est{cps = LCps,
+                                                   bs = Bs0,
+                                                   vn = Vnf + 2},
+                                           Tail)
+                        end,
+                    Cp = #cp{type = compiled,
+                             data = FailFun,
+                             next = Next0,
+                             bs = Bs,
+                             vn = Vn},
+                    erlog_int:prove_body(Next0, St#est{bs = NewBs2, cps = [Cp | Cps]});
+                _ ->
+                    erlog_int:fail(St)
+            end;
+        _ ->
+            erlog_int:fail(St)
+    end.
+
+new_registry_entry_predicate({_, Key, Value}, Next0, #est{bs = Bs} = St) ->
+    [DKey, DValue] = erlog_int:dderef([Key, Value], Bs),
+    case erlog:vars_in([DKey, DValue]) of
+        [] ->
+            case ?HORDEREG:register(?BBS_BUBBLES_REG, {aid, Key}, Value) of
+                {ok, _} ->
+                    erlog_int:prove_body(Next0, St);
+                Error ->
+                    ?WARNING_MSG("Failled Adding aid : ~p   ~p   error:~p", [DKey, DValue, Error]),
+                    erlog_int:fail(St)
+            end;
+        _ ->
+            erlog_int:fail(St)
+    end.
+
+update_registry_entry_predicate({_, Key, Value}, Next0, #est{bs = Bs} = St) ->
+    [DKey, DValue] = erlog_int:dderef([Key, Value], Bs),
+    case erlog:vars_in([DKey, DValue]) of
+        [] ->
+            case ?HORDEREG:update_value(?BBS_BUBBLES_REG, {aid, DKey}, fun(_oldval) -> DValue end)
+            of
+                {_, _} ->
+                    erlog_int:prove_body(Next0, St);
+                Other ->
+                    ?WARNING_MSG("Failled to update aid  :~p   error :~p", [{DKey, DValue}, Other]),
+                    erlog_int:fail(St)
+            end;
+        _ ->
             erlog_int:fail(St)
     end.
 
