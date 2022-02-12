@@ -12,7 +12,7 @@ action(assert(initialized(Ns, Ag, Params)),
      "bbs:mts:client:registry"::cc(CcId, LookedAgent, LookedNode, "localhost", "bbs:mts:client:registry") )),
 
     %% Register this ontology as being able to send message
-    "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:registry")),
+    "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:registry"))
     ],
     initialized(Ag, Node, Ns, Params)).
 
