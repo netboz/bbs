@@ -21,8 +21,9 @@
     [
         {{connect, 5}, ?MODULE, connect_predicate},
         {{connect_async, 2}, ?MODULE, connect_async_predicate},
-        {{mqtt_publish, 3}, ?MODULE, mqtt_publish_predicate},
-        {{mqtt_subscribe, 2}, ?MODULE, mqtt_subscribe_predicate},
+        {{mqtt_publish, 4}, ?MODULE, mqtt_publish_predicate},
+        {{mqtt_subscribed, 2}, ?MODULE, mqtt_subscribed_predicate},
+        {{subscribe, 2}, ?MODULE, mqtt_subscribe_predicate},
         {{new_cc, 2}, ?MODULE, new_cc_predicate},
         {{mqtt_send, 2}, ?MODULE, mqtt_send_predicate},
         {{topic_ccid, 2}, ?MODULE, topic_ccid_predicate}]).
@@ -31,7 +32,7 @@
 -export([external_predicates/0]).
 -export([perform_connect/3, msg_handler/2, disconnected/1]).
 -export([connect_predicate/3, connect_async_predicate/3]).
--export([mqtt_subscribe_predicate/3, mqtt_publish_predicate/3]).
+-export([mqtt_subscribed_predicate/3, mqtt_subscribe_predicate/3, mqtt_publish_predicate/3]).
 
 -export([new_cc_predicate/3, mqtt_send_predicate/3, topic_ccid_predicate/3]).
 
@@ -114,6 +115,69 @@ msg_handler(Msg, Pid) ->
 disconnected(Data) ->
     ?INFO_MSG("DISCONNECTED ~p",[Data]).
 
+
+
+mqtt_subscribed_predicate({_, Topic, ClientPid}, Next0, #est{bs = Bs} = St) ->
+    [DTopic, DClientPid] = erlog_int:dderef([Topic, ClientPid], Bs),
+    case erlog:vars_in(DClientPid) of
+        [_] ->
+            %% ClientPid must be binded
+            erlog_int:fail(St);
+        _ ->
+          case erlog:vars_in(DTopic) of 
+            [_] ->
+                RawResult = emqtt:subscriptions(DClientPid),
+                    % Rawresult : [{topic(), [subopt()]}]
+                mqtt_subscribed_predicate_browse(DTopic, DClientPid, Next0, St, RawResult);
+            [] -> 
+                RawResult = emqtt:subscriptions(DClientPid),
+                    case lists:keyfind(DTopic, 1, RawResult) of 
+                        [] ->
+                            erlog_int:fail(St);
+                        _ ->
+                            erlog_int:prove_body(Next0, St)
+                end
+          end
+      end.
+
+    
+
+mqtt_subscribed_predicate_browse(_DTopic, _DClientPid, _Next0, St, []) ->
+    erlog_int:fail(St);
+mqtt_subscribed_predicate_browse(DTopic, DClientPid, Next0, #est{bs = Bs,
+                   vn = Vn,
+                   cps = Cps} =
+                  St, [{RTopic, _Params}| OtherTopics]) ->
+    case erlog_int:unify(DTopic, RTopic, Bs) of
+        {succeed, NewBs} ->
+            ?INFO_MSG("Unified", []),
+
+            FailFun =
+                fun(#cp{next = NextF,
+                        bs = Bs0,
+                        vn = Vnf},
+                    LCps,
+                    Lst) ->
+                   mqtt_subscribed_predicate_browse(DTopic,
+                                 DClientPid,
+                                 NextF,
+                                 Lst#est{cps = LCps,
+                                         bs = Bs0,
+                                         vn = Vnf + 1},
+                                 OtherTopics)
+                end,
+            Cp = #cp{type = compiled,
+                     data = FailFun,
+                     next = Next0,
+                     bs = Bs,
+                     vn = Vn},
+            erlog_int:prove_body(Next0, St#est{bs = NewBs, cps = [Cp | Cps]});
+        _ ->
+            ?INFO_MSG("NOT unified", []),
+            erlog_int:fail(St)
+    end.
+
+
 mqtt_subscribe_predicate({_, Client, Topic}, Next0, #est{bs = Bs} = St) ->
     Vars = [DClient, DTopic] = erlog_int:dderef([Client, Topic], Bs),
     case erlog:vars_in(Vars) of
@@ -131,11 +195,22 @@ mqtt_subscribe_predicate({_, Client, Topic}, Next0, #est{bs = Bs} = St) ->
             erlog_int:fail(St)
     end.
 
-mqtt_publish_predicate({_, Client, Topic, Payload}, Next0, #est{bs = Bs} = St) ->
+mqtt_publish_predicate({_, Client, Topic, Payload, Options}, Next0, #est{bs = Bs} = St) ->
     Vars = [DClient, DTopic, DPayload] = erlog_int:dderef([Client, Topic, Payload], Bs),
+    ?INFO_MSG("--------> Published ~p    ~p    ~p", [Client, DTopic, DPayload]),
+    
+    OptionsFinal = case Options of 
+            OptionsList when is_list(OptionsList)->
+                OptionsList;
+            _ ->
+                []
+         end,
+
     case erlog:vars_in(Vars) of
         [] ->
-            case emqtt:publish(DClient, DTopic, [], DPayload, []) of
+            case emqtt:publish(DClient, DTopic, #{}, DPayload, OptionsFinal) of
+                ok ->
+                    erlog_int:prove_body(Next0, St);
                 {ok, _PacketId} ->
                     erlog_int:prove_body(Next0, St);
                 {error, Reason} ->

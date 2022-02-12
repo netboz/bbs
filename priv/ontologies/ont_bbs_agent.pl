@@ -112,8 +112,7 @@ subscribed(CcId, TransportOntology) :-
     TransportOntology::subscribed(CcId).
 subscribed(CcId, Domain, TransportOntology) :-
     TransportOntology::subscribed(CcId, Domain).
-subscribed(CcId, LookedAgent, LookedNode, Domain, TransportOntology) :-
-    "bbs:agent:ccs"::cc(CcId, LookedAgent, LookedNode, Domain, TransportOntology).
+
 
 %cc(CcId, Agent, Node, Domain, ClientId, TransportOntology)
 %% @doc: sent(CcId::string(), Payload:: term())
