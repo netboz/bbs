@@ -8,8 +8,7 @@ action(initialize(AgentId, Parent, Node, Params),
     assert(node(Node)),
     "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:mqtt")),
     pairs_key_value(Params, clients(ClientList)),
-    connections_initiated(ClientList),
-    goal(published("coucsssdsddssdssdou", "test_bob", Domain, [retain(true)]))
+    connections_initiated(ClientList)
     ],
     initialized(AgentId, Parent, Node, Params)).
 
