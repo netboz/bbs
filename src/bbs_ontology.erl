@@ -23,13 +23,15 @@
 -export([get_registered_ont_desc/1, register_ontologies/1, create_kb_store/3,
          build_ontology/3]).
 % Built in predicates
--export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3]).
+-export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3, concat_binary_predicate/3]).
 % Utilities
 -export([prove/2, string_to_eterm/1, put_onto_hooks/3]).
 
 %% Built-in (erlang) Predicates included into all ontologies that will be registered
 -define(COMMON_BUILD_IN_PREDS,
-        [{{log, 3}, ?MODULE, lager_predicate},
+        [
+         {{concat, 3}, ?MODULE, concat_binary_predicate},
+         {{log, 3}, ?MODULE, lager_predicate},
          {{'::', 2}, ?MODULE, prove_external_ontology_predicate},
          {{type_of, 2}, ?MODULE, type_of_predicate}]).
 %% Predicates included into all ontologies that will be registered
@@ -538,6 +540,18 @@ type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_list(Term) ->
     erlog_int:unify_prove_body(list, Type, Next0, St);
 type_of_predicate_deref(_, Type, Next0, #est{} = St) ->
     erlog_int:unify_prove_body(unknown_type, Type, Next0, St).
+
+
+
+
+concat_binary_predicate({_Atom, Left, Right, Concat}, Next0, #est{bs = Bs} = St) ->
+    case erlog_int:dderef([Left, Right], Bs) of 
+        [SL, SR] when is_binary(SL) andalso is_binary(SR) ->
+            erlog_int:unify_prove_body(Concat, <<SL/binary, SR/binary>>, Next0, St);
+        _ ->
+            erlog_int:fail(St)
+    end.
+
 
 %-------------------------------------------------------------------------------
 %  Utilities
