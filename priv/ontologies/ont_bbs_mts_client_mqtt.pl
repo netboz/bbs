@@ -16,12 +16,13 @@ action(initialize(AgentId, Parent, Node, Params),
 connections_initiated([]).
 connections_initiated([connection(Domain, Port, ClientId, Options, Subscriptions)|OtherConnections]) :-
     goal(connection(Domain, Port, ClientId, Pid, Options)),
-    subscriptions_initiated(Pid, Subscriptions),
+    subscriptions_initiated(Domain, Subscriptions),
     connections_initiated(OtherConnections).
 
-subscriptions_initiated(ClientPid, []).
-subscriptions_initiated(ClientPid, [subscription(Topic)|OtherSubscriptions]) :-
-    subscribe(ClientPid, Topic),
+subscriptions_initiated(_Domain, []).
+subscriptions_initiated(Domain, [subscription(Topic)|OtherSubscriptions]) :-
+    log(info,"Initiating subscriptions ~p", [Topic]),
+    goal(subscribed(Topic, Domain)),
     subscriptions_initiated(Domain, OtherSubscriptions). 
 
 
@@ -35,7 +36,9 @@ initialize(AgentId, Parent, Node, Params) :-
 action(assert(connection(Domain, Port, ClientId, Pid, Connection_options)), 
         [
             log(info,"Prolog connect", []),
-            connect(Domain, Port, ClientId, Pid, Connection_options)
+            connect(Domain, Port, ClientId, Pid, Connection_options),
+            "bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", 
+                up(connection(Domain, Port, ClientId, Pid, Connection_options))))
         ], 
     connection(Domain, Port, ClientId, Pid, Connection_options)).
 
@@ -46,9 +49,15 @@ subscribed(Topic) :-
 
 subscribed(Topic, Domain) :-
     connection(Domain, _, _, Pid, _),
+    log(info,"Before connect", []),
     mqtt_subscribed(Topic, Pid).
 
 
+
+action(goal(subscribed(Topic,"localhost")) ,[] , subscribed(Topic)).
+action("bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", 
+        subscribed(Topic, Domain))), [connection(Domain, _, _, Pid, _), subscribe(Pid, Topic)], 
+        subscribed(Topic, Domain)).
 
 
 action(mqtt_publish(Pid, Topic, Payload, Options),[connection(Domain, _, ClientId, Pid, _)], 
@@ -61,7 +70,7 @@ action(assert(cc(CcId, Me, Node, Domain, ClientId)),
     me(Me),
     node(Node),
     connection(Domain, _Port, ClientId, Pid, _Connection_options),
-    subscribed(CcId, Pid)
+    subscribe(CcId, Pid)
     ],
     cc(CcId, ClientId)).
 
