@@ -26,6 +26,9 @@ A multi-agents asynchronous simulation system
 
 ## Run
 
+
+!! current messaging protocol for agents is currently based on MQTT. Hence you need a local mqtt server running, with anonymous access allowed at the moment ( sic ) !!
+
 To have a quick try locally you can use this command :
 
     $ iex --sname bbs  -S mix
