@@ -10,7 +10,6 @@
 
 -author("netboz").
 
--include("bbs.hrl").
 -include("utils.hrl").
 
 -include_lib("erlog/include/erlog_int.hrl").
@@ -22,7 +21,7 @@
     {{register_gproc, 1}, ?MODULE, register_gproc_predicate},
     {{join_cc, 2}, ?MODULE, join_cc_predicate},
     {{cc, 4}, ?MODULE, cc_predicate},
-    {{gproc_send, 2}, ?MODULE, gproc_send_predicate}
+    {{send, 2}, ?MODULE, gproc_send_predicate}
   ]).
 
 %% API
@@ -52,14 +51,12 @@ register_gproc_predicate({_, ParentBubble}, Next0, #est{bs = Bs} = St) ->
 join_cc_predicate({_, CCId, Ontology}, Next0, #est{bs = Bs} = St) ->
   ?INFO_MSG("Joining cc ~p  ~p  ", [CCId, Ontology]),
   [DCCId, DOntology] = ListD = erlog_int:dderef([CCId, Ontology], Bs),
-  Parent = get(parent),
   case lists:any(fun(El) -> case El of  {_} -> true; _ -> false end end, ListD) of
     true ->
       %% All parameters need to be binded
       erlog_int:fail(St);
     _ ->
-      Me = get(agent_name),
-      gproc:reg({p, g, DCCId}, {Me, Parent, DOntology} ),
+      gproc:reg({p, g, DCCId}, DOntology),
       erlog_int:prove_body(Next0, St)
   end.
 
@@ -80,32 +77,32 @@ join_cc_predicate({_, CCId, Ontology}, Next0, #est{bs = Bs} = St) ->
 %%  end.
 
 
-cc_predicate({_, CCId, To, Ontology, Parent}, Next0, #est{bs = Bs} = St) ->
-  ?INFO_MSG("--->Looking for CC :~p",[{CCId, To, Ontology, Parent}]),
-  [DCCId, DTo, DOntology, DParent] = erlog_int:dderef([CCId, To, Ontology, Parent], Bs),
+cc_predicate({_, CCId, Ontology}, Next0, #est{bs = Bs} = St) ->
+  ?INFO_MSG("--->Looking for CC :~p",[{CCId, Ontology}]),
+  [DCCId, DOntology] = erlog_int:dderef([CCId, Ontology], Bs),
   GProcKey = {p, g, to_query_param(DCCId)},
-  MatchHead = {GProcKey, '_', {to_query_param(DTo), to_query_param(DParent), to_query_param(DOntology)}},
+  MatchHead = {GProcKey, '_', to_query_param(DOntology)},
   Guard = [],
   Result = ['$$'],
   SelectedCCs = gproc:select([{MatchHead, Guard, Result}]),
   ?INFO_MSG("Selected CCs :~p",[SelectedCCs]),
 
-  cc_predicate2(DCCId, DTo, DOntology, DParent, Next0, St, SelectedCCs).
+  cc_predicate2(DCCId, DOntology, Next0, St, SelectedCCs).
 
-cc_predicate2(_DCCId, _DTo, _DOntology, _DParent, _Next0, St, []) ->
+cc_predicate2(_DCCId, _DOntology, _Next0, St, []) ->
   erlog_int:fail(St);
 
-cc_predicate2(DCCId, DTo, DOntology, DParent, Next0, #est{bs = Bs, vn = Vn, cps = Cps} = St,
-    [[{_, _, RCCID}, _, {RTo, RParent, ROntology}] | Tail]) ->
+cc_predicate2(DCCId, DOntology, Next0, #est{bs = Bs, vn = Vn, cps = Cps} = St,
+    [[{_, _, RCCID}, _, ROntology] | Tail]) ->
   ?INFO_MSG("cc_predicate2",[]),
 
-  case unify_cc([{DCCId, RCCID}, {DTo, RTo}, {DParent, RParent}, {DOntology, ROntology}], Bs) of
+  case unify_cc([{DCCId, RCCID}, {DOntology, ROntology}], Bs) of
     {succeed, NewBs} ->
       ?INFO_MSG("Unified",[]),
 
       FailFun =
         fun(#cp{next=NextF,bs=Bs0,vn=Vnf}, LCps, Lst) ->
-          cc_predicate2(DCCId, DTo, DOntology, DParent, NextF, Lst#est{cps = LCps, bs = Bs0, vn = Vnf + 4}, Tail)
+          cc_predicate2(DCCId, DOntology, NextF, Lst#est{cps = LCps, bs = Bs0, vn = Vnf + 4}, Tail)
         end,
       Cp = #cp{type = compiled,
         data = FailFun,
@@ -119,11 +116,16 @@ cc_predicate2(DCCId, DTo, DOntology, DParent, Next0, #est{bs = Bs, vn = Vn, cps 
   end.
 
 gproc_send_predicate({_, CcId, Message}, Next0, #est{bs = Bs} = St) ->
-  AgentName = get(agent_name),
-  Parent = get(parent),
+        ?WARNING_MSG("CMEEUUHUUH :~p", [CcId]),
+
   case  erlog_int:dderef([Message, CcId], Bs) of
-    [DMessage, DCcId] when is_binary(DMessage) andalso is_binary(DCcId) ->
-      gproc:send({p, g, DCcId}, {gproc, AgentName, Parent, DCcId, DMessage}),
+    [{_} = CcId, _] ->
+      ?WARNING_MSG("Call to send with unbinded CC :~p", [CcId]),
+      %% Message must be binded
+      erlog_int:fail(St);
+    [DMessage, DCcId] when is_binary(DCcId) ->
+      ?DEBUG("Sending ~p on CC ~p", [DMessage, DCcId]),
+      gproc:send({p, g, DCcId}, {incoming_gproc, DCcId, DMessage}),
       erlog_int:prove_body(Next0, St);
     _ ->
       erlog_int:fail(St)

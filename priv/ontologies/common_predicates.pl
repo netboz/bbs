@@ -14,3 +14,9 @@ satisfy_prereq([]).
 satisfy_prereq([Goal1|Others]) :-
      goal(Goal1),
      satisfy_prereq(Others).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Testing functionnality %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+action(assert(tested(Ontology)), [me(AgentId), findall(Test, Ontology::test(Test,AgentId), Results)], tested(Ontology)).
+
+
+

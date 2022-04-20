@@ -1,6 +1,6 @@
 %%%-------------------------------------------------------------------
 %%% @author Yan
-%%% @copyright (C) 2020, <COMPANY>
+%%% @copyright (C) 2020, qengho
 %%% @doc FSM describing a bbs agent
 %%%
 %%% @end
@@ -15,10 +15,8 @@
 -include("bbs.hrl").
 -include("utils.hrl").
 
--include_lib("erlog/include/erlog_int.hrl").
-
 %% API
--export([start_link/1]).
+-export([start_link/2]).
 %% gen_statem States
 -export([ontologies_init/3, running/3]).
 %% gen_statem other callbacks
@@ -26,12 +24,11 @@
 %% Used to retrieve and store initial state for an ontology
 -export([get_ontology_state_from_namespace/1, store_ontology_state_on_namespace/2]).
 
--define(SERVER, ?MODULE).
-
--record(agent_state, {uuid, parent, onto_to_init = [], onto_dict}).
+-record(agent_state, {uuid, parent, tree_node, onto_to_init = [], onto_dict}).
 
 %%%===================================================================
 %%% gen_statem callbacks
+
 %%%===================================================================
 
 %% @doc This function is called by a gen_statem when it needs to find out
@@ -39,43 +36,44 @@
 callback_mode() ->
     [state_functions, state_enter].
 
-
 %% @doc Creates a gen_statem process which calls Module:init/1 to
 %% initialize. To ensure a synchronized start-up procedure, this
 %% function does not return until Module:init/1 has returned.
-start_link(#agent{} = AgentSpecs) ->
-    gen_statem:start(?MODULE, AgentSpecs, []).
+start_link(#agent{} = AgentSpecs, TreeNode) ->
+     gen_statem:start({via, ?HORDEREG, {?BBS_BUBBLES_REG, {reg, TreeNode, AgentSpecs#agent.name}}}, 
+        ?MODULE, AgentSpecs#agent{tree_node = TreeNode}, []).
 
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init(#agent{name = undefined} = Agent) ->
-    init(Agent#agent{name = zuuid:binary(
-        zuuid:v4())});
-init(#agent{name = AgentName, parent = Parent} = AgentSpecs) when is_binary(AgentName)->
-    ?INFO_MSG("Initialising Agent :~p   PID :~p", [AgentSpecs, self()]),
+    init(Agent#agent{name = uuid:get_v4_urandom()});
+init(#agent{name = AgentName, parent = Parent, tree_node = TreeNode} = AgentSpecs) when is_binary(AgentName) ->
+    ?INFO_MSG("Initialising Agent :~p   PID :~p TreeNode :~p", [AgentSpecs, self(), TreeNode]),
     %% Right now we are trapping exit to manage child processes, even if we don't have one
     process_flag(trap_exit, true),
+
+    %% Initialise randomness for this process
+    quickrand:seed(),
 
     %% We store agent name in process dictionary for easy retrieval during predicate proving process. Ideally, agent name,
     %% and parent should be managed only with bbs:agent ontology, and internally like this in process dict, but to avoid
     %% querying bbs:agent each time we want to access these values, for perf, it is here for now
     put(agent_name, AgentName),
-    put(parent, AgentSpecs#agent.parent),
-
-    %% This is low level registration of the process. This address key will be used for process administration
-    %% from Parents
-    gproc:reg({n, g, {AgentName, Parent}}, value_unused),
+    put(parent, Parent),
+    put(tree_node, TreeNode),
 
     %% For log convenience
     lager:md([{agent_name, AgentName}]),
 
     %% Finish init to start ontologies initialisation
     {ok,
-        ontologies_init,
-        #agent_state{onto_dict = dict:new(), uuid = AgentName, parent = AgentSpecs#agent.parent},
-        [{next_event, cast, {init_next, AgentSpecs#agent.startup_ontologies}}]}.
-
+     ontologies_init,
+     #agent_state{onto_dict = dict:new(),
+                  uuid = AgentName,
+                  tree_node = TreeNode,
+                  parent = AgentSpecs#agent.parent},
+     [{next_event, cast, {init_next, AgentSpecs#agent.startup_ontologies}}]}.
 
 %%------------------------------------------------------------------------------
 %% @private
@@ -92,12 +90,12 @@ ontologies_init(cast, {init_next, []}, State) ->
     ?INFO_MSG("All Ontologies initialised.", []),
     {next_state, running, State};
 ontologies_init(cast,
-    {init_next, [{ontology, Ns, Params, DbMod} | NextOntos]},
-    #agent_state{} = State) ->
+                {init_next, [{ontology, Ns, Params, DbMod} | NextOntos]},
+                #agent_state{} = State) ->
     case bbs_ontology:build_ontology(State#agent_state.uuid, Ns, DbMod) of
         {error, OntoBuildError} ->
             ?ERROR_MSG("~p Failled to initialize ontology :~p with error: ~p",
-                [State#agent_state.uuid, Ns, OntoBuildError]),
+                       [State#agent_state.uuid, Ns, OntoBuildError]),
             {stop, {ontologies_creation_failled, Ns, OntoBuildError}, State};
         {ok, {_Tid, Kb}} ->
             ?INFO_MSG("Builded Knowledge Base for :~p", [Ns]),
@@ -108,13 +106,20 @@ ontologies_init(cast,
             %% ontology isn't yet initialised, for hooks to be able to find the ontology.
             %% TODO : This ^^ needs to be refactored
             undefined = store_ontology_state_on_namespace(Ns, KbReady),
-            case erlog_int:prove_goal({goal, {initialized, State#agent_state.uuid, State#agent_state.parent, Ns, Params}}, KbReady)
+            case erlog_int:prove_goal({goal,
+                                       {initialized,
+                                        State#agent_state.uuid,
+                                        State#agent_state.parent,
+                                        State#agent_state.tree_node,
+                                        Params}},
+                                      KbReady)
             of
                 {succeed, _InitializedOntoState} ->
+                    erlog_int:prove_goal({goal, {tested, Ns}}, KbReady),
                     {next_state,
-                        ontologies_init,
-                        State,
-                        [{next_event, cast, {init_next, NextOntos}}]};
+                     ontologies_init,
+                     State,
+                     [{next_event, cast, {init_next, NextOntos}}]};
                 {fail, FStatr} ->
                     _ = erase(Ns),
                     ?ERROR_MSG("Ontology initialisation failed :~p with state: ~p", [Ns, FStatr]),
@@ -125,21 +130,16 @@ ontologies_init(cast,
                     {stop, {ontologies_initialisation_failed, Ns}, State}
             end
     end;
-
 ontologies_init(info, {'EXIT', Pid, Reason}, State) ->
-    ?INFO_MSG("Child ~p EXIT with reason :~p",
-        [State#agent_state.uuid, Pid, Reason]),
-    {next_state, ontologies_init, State};
-
-
+    ?INFO_MSG("Child ~p EXIT with reason :~p", [State#agent_state.uuid, Pid, Reason]),
+    {stop, Reason, State};
 %% Ideally this message received from a monitor should be managed by next clause, but because message from monitor
 %% doesn't start from an atom, it crash the prolog engine...hence this dedicated clause.
 ontologies_init(info, {{'DOWN', Name}, _ref, process, Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p EXITED with reason :~p",
-        [State#agent_state.uuid, Pid, Reason]),
+              [State#agent_state.uuid, Pid, Reason]),
     _ = trigger_agent_reactions(info_event, {child_down, Name, Reason}),
-    {next_state, ontologies_init, State};
-
+    keep_state_and_data;
 ontologies_init(Type, Message, State) when is_tuple(Message) ->
     ?INFO_MSG("~p Got event :~p   ~p", [State#agent_state.uuid, {Type, Message}, self()]),
     %% The purpose of this is only to avoid using the event Type directly into prolog, because 'call' type
@@ -152,12 +152,12 @@ ontologies_init(Type, Message, State) when is_tuple(Message) ->
         info ->
             _ = trigger_agent_reactions(info_event, Message)
     end,
-    {next_state, ontologies_init, State};
-
+    keep_state_and_data;
 ontologies_init(UnkMesTyp, UnkMes, State) ->
-    ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",
-        [State#agent_state.uuid, {UnkMesTyp, UnkMes}]),
+    ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p in state init",
+              [State#agent_state.uuid, {UnkMesTyp, UnkMes}]),
     {next_state, running, State}.
+
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
@@ -166,36 +166,25 @@ ontologies_init(UnkMesTyp, UnkMes, State) ->
 %% @end
 %%------------------------------------------------------------------------------
 
-running(enter, _, #agent_state{uuid = Uuid, parent = Parent} = State) when is_binary(Parent)->
-    ?INFO_MSG("Agent ~p is running.", [Uuid]),
+running(enter, _, #agent_state{uuid = Uuid, parent = Parent} = State) ->
+    ?INFO_MSG("=======> Agent ~p is running.", [Uuid]),
     %% Notify monitors with a predicate that this agent  is running
     {monitored_by, Monitors} = erlang:process_info(self(), monitored_by),
-    lists:foreach(fun(Pid) -> Pid!{running, Uuid, Parent} end, Monitors),
-    trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
+    lists:foreach(fun(Pid) -> Pid ! {running, Uuid, Parent} end, Monitors),
+    _ = trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
     {keep_state, State};
-running(enter, _, #agent_state{uuid = <<"root">> = Uuid, parent = Parent} = State) ->
-    ?INFO_MSG("Root bubble is running on ~p", [Parent]),
-    OtherNodes = nodes(),
-    %% Notify other roots bubble in cluster a new root is running
-    lists:foreach(fun(Node) -> gproc:send({n, g, {Uuid, Node}}, {running, Uuid, Parent}) end, OtherNodes),
-    %% And trigger hooks waiting for running.
-    trigger_agent_reactions("bbs:agent", {running, Uuid, Parent}),
-    {keep_state, State};
-
 running(info, {'EXIT', Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p disconnected with reason :~p",
-        [State#agent_state.uuid, Pid, Reason]),
-    {next_state, running, State};
-
+              [State#agent_state.uuid, Pid, Reason]),
+    {stop, Reason, State};
 %% Ideally this message received from a monitor should be managed by next clause, but because message from monitor
 %% doesn't start from an atom, it crash the prolog engine...hence this dedicated clause.
 running(info, {{'DOWN', Name}, _ref, process, Pid, Reason}, State) ->
     ?INFO_MSG("Agent ~p : Child ~p EXITED with reason :~p",
-        [State#agent_state.uuid, Pid, Reason]),
+              [State#agent_state.uuid, Pid, Reason]),
     _ = trigger_agent_reactions(info_event, {child_down, Name, Reason}),
     {next_state, running, State};
-
-running(Type, Message, State) when is_tuple(Message)->
+running(Type, Message, State) when is_tuple(Message) ->
     ?INFO_MSG("~p Got event :~p   ~p", [State#agent_state.uuid, {Type, Message}, self()]),
 
     %% The purpose of this is only to avoid using the event Type directly into prolog, because 'call' type
@@ -211,8 +200,8 @@ running(Type, Message, State) when is_tuple(Message)->
     {next_state, running, State};
 
 running(UnkMesTyp, UnkMes, State) ->
-    ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p",
-        [State#agent_state.uuid, {UnkMesTyp, UnkMes}]),
+    ?INFO_MSG("Agent ~p Received unmanaged state messsage :~p in state running",
+              [State#agent_state.uuid, {UnkMesTyp, UnkMes}]),
     {next_state, running, State}.
 
 %% @private
@@ -242,7 +231,6 @@ code_change(_OldVsn, StateName, State = #agent_state{}, _Extra) ->
 %%------------------------------------------------------------------------------
 
 prove(NameSpace, Predicate) ->
-    %TODO: next instruction fail, should mimic the failling of a prolog predicate
     bbs_ontology:prove(NameSpace, Predicate).
 
 %%------------------------------------------------------------------------------
@@ -264,7 +252,7 @@ get_ontology_state_from_namespace(Ns) ->
 %%------------------------------------------------------------------------------
 
 -spec store_ontology_state_on_namespace(Ns :: binary(), Kb :: term()) ->
-    undefined | term().
+                                           undefined | term().
 store_ontology_state_on_namespace(Ns, KbDb) ->
     put(Ns, KbDb).
 
@@ -278,3 +266,6 @@ store_ontology_state_on_namespace(Ns, KbDb) ->
 
 trigger_agent_reactions(Type, Message) ->
     prove(<<"bbs:agent">>, {goal, {agent_event_processed, Type, Message}}).
+
+
+

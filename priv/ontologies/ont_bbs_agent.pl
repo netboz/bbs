@@ -5,17 +5,17 @@
 %% @doc: initialized(+Ns, +Ag, +Params)
 %% Initialize this ontology
 
-action(initialize(AgentId, Parent, NameSpace, Params), [], initialized(AgentId, Parent, NameSpace, Params)).
+action(initialize(AgentId, Parent, Node, Params), [], 
+            initialized(AgentId, Parent, Node, Params)).
 
 initialize(AgentId, Parent, NameSpace, Params) :-
     log(info,"Waking up agent :~p",[AgentId]),
      new_knowledge_base("bbs:agent:event_handlers"),
      new_knowledge_base("bbs:agent:stims"),
-     new_knowledge_base("bbs:agent:ccs"),
+     new_knowledge_base("bbs:agent:ccs", erlog_db_dict),
      assert(me(AgentId)),
      assert(parent(Parent)),
-     "bbs:agent:ccs"::assert(( cc("bbs:mts:client:gproc", CcId, To, Ontology, Parent) :-
-                                             "bbs:mts:client:gproc"::cc(CCId, To, Ontology, Parent))),
+     assert(node(Node)),
      assert(initialized(AgentId, Parent, NameSpace, Params)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% gen fsm events related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,7 +27,7 @@ initialize(AgentId, Parent, NameSpace, Params) :-
 %% cast -> async_event
 %% info -> info_event
 
-action(process_agent_event(Type, Message), [log(info,"Processing event : ~p",[{Type, Message}])], agent_event_processed(Type, Message)).
+action(process_agent_event(Type, Message), [log(debug,"Processing event : ~p",[{Type, Message}])], agent_event_processed(Type, Message)).
 
 %% @doc: process_agent_events(+Type, +Message)
 %% Effectively execute stims and delete needed ones
@@ -95,60 +95,97 @@ do_process_stim(StimOnt, StimMessage) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% other agents related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%% @doc: agent(+AgentName:string)
-%% Match with first child agent.
-%% A agent(+AgentName:string, +ParentName:string) predicate exists as built in.
-
-agent(Name) :-
-    me(Me),
-    agent(Name, Me).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% There is no management of agents residing on another platform atm.
+%% @doc: cc(CcId:IN:string())
+%% This action the create Communication Channels (CCs) locally using default "bbs:mts:client:registry" ontology
 
-%% This action the create Communication Channels (CCs) locally
-action(goal(cc(CcId, Ontology, "bbs:mts:client:gproc")) ,[], cc(CcId, Ontology)).
-action(TransportOntology::goal(cc(CcId, Ontology)), [], cc(CcId, Ontology, TransportOntology)).
+action("bbs:mts:client:registry"::subscribe(CcId),[], subscribed(CcId)).
+action(TransportOntology::goal(subscribe(CcId)), [], subscribed(CcId, TransportOntology)).
+action(TransportOntology::goal(subscribe(CcId, Domain)), [], subscribed(CcId, Domain, TransportOntology)).
+
+subscribed(CcId) :-
+    subscribed(CcId, "bbs:mts:client:registry").
+subscribed(CcId, TransportOntology) :-
+    TransportOntology::subscribed(CcId).
+subscribed(CcId, Domain, TransportOntology) :-
+    TransportOntology::subscribed(CcId, Domain).
 
 
+%cc(CcId, Agent, Node, Domain, ClientId, TransportOntology)
+%% @doc: sent(CcId::string(), Payload:: term())
+%% This action sends Payload content on communication channel CcId
 
-action(TransportOntology::send(CcId, Payload),[cc(CcId, _Ontology, TransportOntology)], sent(CcId, Payload)).
+action(TransportOntology::send(CcId, Payload),[
+    log(info, "Before CC",[]),
+    "bbs:agent:ccs"::cc(CcId, _, _, TransportOntology),     
+    log(info, "after CC",[])], 
+    sent(CcId, Payload)).
 
+action(process_incoming_data(CcId, Data),
+    [],
+    incoming_data_processed(CcId, Data)).
 
-action(TransportOntology::send(CcId, message(To, Ontology, Payload)),
-    ["bbs:agent:ccs":cc(CcId, Ontology, TransportOntology), to(To, CcId)], message_sent(CcId, message(To, Ontology, Payload))).
+process_incoming_data(CcId, Data) :-
+    goal(stim_processed("bbs:agent", incoming_data(CcId, Data))).
 
+%% @doc: message_sent(CcId::string(), message(To::term(), Ontology:string(), Payload:term()))
+%% This action sends 'message(To, Ontology, Payload)' on specified CcId.
+%% Transport ontology will verify 'To' can be reached on this CcId, this means this predicate will fail if 
+%% "TransportOntology"::to(To, CcId) fails 
 
-to(agent(Agent, Parent), CcId) :-
-    agent(Agent, Parent),
-    "bbs:agent:ccs"::cc(CcId, Ontology, TransportOntology),
-    Ontology::to(agent(Agent, Parent), CcId).
+action(TransportOntology::send(CcId, message(agent(Node, AgentId), Ontology, Payload)),
+    ["bbs:agent:ccs"::cc(CcId, AgentId, Node, TransportOntology)], 
+        message_sent(CcId, message(agent(Node, AgentId), Ontology, Payload))).
 
 
 
 action(process_incoming_message(Com_Channel, From, To, Ontology, Predicate),
     [],
-        incoming_message_processed(Com_Channel, From, To, Ontology, Predicate)).
+    incoming_message_processed(Com_Channel, From, To, Ontology, Predicate)).
 
 process_incoming_message(Cc, From, To, Ontology, Predicate) :-
     goal(stim_processed("bbs:agent", message(Cc, From, To, Ontology, Predicate))).
 
-action(Transport_Ontology::goal(sent(CcId, Predicate)),
-    [log(info,"cC",[]), cc(Transport_Ontology, CcId, To, Parent, Ontology), log(info, "CC ~p", [Transport_Ontology])],
-        sent(CcIc, To, Parent, Ontology, Predicate)).
 
-action(Transport_Ontology::goal(cc(CcId, Ontology)),
-    [message_transport_ontology(Transport_Ontology)],
-        cc(Transport_Ontology, CcId, Ontology, Host)).
 
-action(goal(cc(Transport_Ontology, CcId, Ontology,"localhost")), [], cc(Transport_Ontology, CcId, Ontology)).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% bbs:agent Tests %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cc(Transport_Ontology, CcId, Ontology) :-
-    me(Me),
-    parent(Parent),
-    cc(Transport_Ontology, CcId, Me, Parent, Ontology).
 
-cc(Transport_Ontology, CcId, To, Parent, Ontology) :-
-    "bbs:agent:ccs"::cc(Transport_Ontology, CcId, To, Parent, Ontology).
+
+test(test_react_on_stim, AgentId) :-
+    log(info, "Running test: ~p", [test_react_on_stim]),
+    react_on_stim("bbs:agent", stim_test_react_on(Value), "bbs:agent", react_on_stim_test(Value)),
+    goal(stim_processed("bbs:agent", stim_test_react_on(test_value1))),
+    test_react_on_check(test_value1),
+    %% Check stim is still present after being first triggered
+    goal(stim_processed("bbs:agent", stim_test_react_on(test_value2))),
+    %% Do some cleaning, remove the stim
+    Head = stim("bbs:agent", stim_test_react_on(Value), []),
+    Body = "bbs:agent"::react_on_stim_test(Value),
+    "bbs:agent:stims"::retract(( Head :- Body )),
+    retract(test_react_on_check(test_value1)),
+    retract(test_react_on_check(test_value2)),
+
+    %% Validate we have received second steam
+    test_react_on_check(test_value2),
+    log(info, "Test succeeded: ~p", [test_react_on_stim]).
+
+
+ test(test_react_on_stim_once, AgentId) :-
+     log(info, "Running test: ~p", [test_react_on_stim_once]),
+     %% Set Stim, but notice 'once' parameter option for the stim to be single user
+     react_on_stim("bbs:agent", stim_test_react_on(Value), "bbs:agent", react_on_stim_test(Value), [once]),
+     %% Trigger the stim
+     goal(stim_processed("bbs:agent", stim_test_react_on(test_value1))),
+     test_react_on_check(test_value1),
+     %% Now checks stim isn't active anymore
+     goal(stim_processed("bbs:agent", stim_test_react_on(test_value2))),
+     \+test_react_on_check(test_value2),
+     log(info, "Test succeeded: ~p", [test_react_on_stim_once]).
+
+
+ react_on_stim_test(Value) :-
+    assert(test_react_on_check(Value)).

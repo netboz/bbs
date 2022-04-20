@@ -1,66 +1,96 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-action(initialize(AgentId, Parent, NameSpace, Params),
+action(initialize(AgentId, Parent, Node, Params),
     [
     log(info,"Initialising mqtt client",[]),
     assert(me(AgentId)),
     assert(parent(Parent)),
+    assert(node(Node)),
     "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:mqtt")),
-
-
-    log(info,"Connecting",[]),
-    connect([], AgentId, Pid),
-        log(info,"ClientId   ~p",[ClientId]),
-
-    mqtt_subscribe(Pid, "test_topic")
+    pairs_key_value(Params, clients(ClientList)),
+    connections_initiated(ClientList)
     ],
-    initialized(AgentId, Parent, NameSpace, Params)).
-
-initialize(AgentId, Parent, NameSpace, Params) :-
-    assert(initialized(AgentId, Parent, NameSpace, Params)).
+    initialized(AgentId, Parent, Node, Params)).
 
 
-%% ClientId is unique per Ontology, this may not reflect reality where two clients connecting on two servers using same naming
-%% Conventions can end up with two clients with different hosts but same clientId
-action(assert(client(Options, Pid)), [new_client(Options, Pid), options_processed(Pid, Options)], client(Options, Pid)).
+connections_initiated([]).
+connections_initiated([connection(Domain, Port, ClientId, Options, Subscriptions)|OtherConnections]) :-
+    goal(connection(Domain, Port, ClientId, Pid, Options)),
+    subscriptions_initiated(Domain, Subscriptions),
+    connections_initiated(OtherConnections).
 
-options_processed(Pid, [host(Host) | OtherOptions]) :-
-    assert(host(Pid, Host)),
-    options_processed(OtherOptions).
+subscriptions_initiated(_Domain, []).
+subscriptions_initiated(Domain, [subscription(Topic)|OtherSubscriptions]) :-
+    log(info,"Initiating subscriptions ~p", [Topic]),
+    goal(subscribed(Topic, Domain)),
+    subscriptions_initiated(Domain, OtherSubscriptions). 
 
-options_processed(Pid, [port(Port) | OtherOptions]) :-
-    assert(port(Pid, Port)),
-    options_processed(OtherOptions).
 
-options_processed(Pid, [clientid(ClientId) | OtherOptions]) :-
-    assert(clientid(Pid, ClientId)),
-    options_processed(OtherOptions).
+initialize(AgentId, Parent, Node, Params) :-
+    assert(initialized(AgentId, Parent, Node, Params)).
 
-action(assert(connected(Pid)),
-    [connect(Pid)],
-    connected(pid(Pid))).
 
-action(assert(connected(Pid)),
-    [clientid(Pid, ClientId), connect(Pid)],
-    connected(clientid(ClientId))).
+%%connection(domain, port, ClientId, Pid).
+%cc(CcId, Agent, Node, Domain, ClientId, TransportOntology)
+
+action(assert(connection(Domain, Port, ClientId, Pid, Connection_options)), 
+        [
+            log(info,"Prolog connect", []),
+            connect(Domain, Port, ClientId, Pid, Connection_options),
+            "bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", 
+                up(connection(Domain, Port, ClientId, Pid, Connection_options))))
+        ], 
+    connection(Domain, Port, ClientId, Pid, Connection_options)).
+
+
+
+subscribed(Topic) :-
+    subscribed(Topic, "localhost").
+
+subscribed(Topic, Domain) :-
+    connection(Domain, _, _, Pid, _),
+    log(info,"Before connect", []),
+    mqtt_subscribed(Topic, Pid).
+
+
+
+action(goal(subscribed(Topic,"localhost")) ,[] , subscribed(Topic)).
+action("bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", 
+        subscribed(Topic, Domain))), [connection(Domain, _, _, Pid, _), subscribe(Pid, Topic)], 
+        subscribed(Topic, Domain)).
+
+
+action(mqtt_publish(Pid, Topic, Payload, Options),[connection(Domain, _, ClientId, Pid, _)], 
+    published(Payload, Topic, Domain, Options)).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% new mqtt cc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-action(join_cc(CcId, Ontology, Pid),
-    [\+"bbs:agent:ccs"::cc(_, CcId, _, _, _), host(Pid, Host)],
-        cc(CcId, Ontology, Host)).
+action(assert(cc(CcId, Me, Node, Domain, ClientId)),
+    [
+    me(Me),
+    node(Node),
+    connection(Domain, _Port, ClientId, Pid, _Connection_options),
+    subscribe(CcId, Pid)
+    ],
+    cc(CcId, ClientId)).
 
-action(join_cc(CcId, Ontology),
-    [\+"bbs:agent:ccs"::cc(_, CcId, _, _, _), client(Pid, "localhost")],
-        cc(CcId, Ontology)).
+%% action(join_cc(CcId, Ontology),
+%%     [\+"bbs:agent:ccs"::cc(_, CcId, _, _, _), client(Pid, "localhost")],
+%%         cc(CcId, Ontology)).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%% send a message %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%% send a message %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 action(mqtt_send(CcId, Message), [], sent(CcId, Message)).
 
-cc(CcId, Ontology) :-
-    me(Me),
-    parent(Parent),
-    cc(CcId, Me, Ontology, Parent).
 
 
+
+%cc(CcId, Ag, Node, Domain, ClientId).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+pairs_key_value([Predicate|_], Pattern) :-
+    Pattern = Predicate.
+pairs_key_value([Predicate|OtherPredicates], Pattern) :-
+    pairs_key_value(OtherPredicates, Pattern).
+pairs_key_value(_, _).
 

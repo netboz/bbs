@@ -10,7 +10,6 @@
 
 -author("yan").
 
--include("bbs.hrl").
 -include("utils.hrl").
 
 -include_lib("erlog/include/erlog_int.hrl").
@@ -18,12 +17,10 @@
 %% Prolog API
 
 -define(ERLANG_PREDS,
-    [%% Ontology related predicates
-        {{new_knowledge_base, 1}, ?MODULE, new_knowledge_base_predicate},
-        {{new_knowledge_base, 2}, ?MODULE, new_knowledge_base_predicate},
-        {{prolog_interpretation, 2}, ?MODULE, prolog_interpretation_predicate},
-        {{agent,2}, ?MODULE, agent_predicate}
-    ]).
+        [%% Ontology related predicates
+         {{new_knowledge_base, 1}, ?MODULE, new_knowledge_base_predicate},
+         {{new_knowledge_base, 2}, ?MODULE, new_knowledge_base_predicate},
+         {{prolog_interpretation, 2}, ?MODULE, prolog_interpretation_predicate}]).
 
 %==============================================================================
 % Exports
@@ -32,7 +29,7 @@
 %% Built in predicate behaviour
 -export([external_predicates/0]).
 %% Built in predicates
--export([new_knowledge_base_predicate/3, prolog_interpretation_predicate/3, agent_predicate/3]).
+-export([new_knowledge_base_predicate/3, prolog_interpretation_predicate/3]).
 -export([string_to_eterm/1]).
 
 %%------------------------------------------------------------------------------
@@ -45,62 +42,6 @@
 external_predicates() ->
     ?ERLANG_PREDS.
 
-
-%%------------------------------------------------------------------------------
-%% @doc
-%% @private
-%% True if agent exits
-%%
-%% @end
-%%------------------------------------------------------------------------------
-
-agent_predicate({_Atom, AgentName, ParentName}, Next0, #est{} = St) ->
-    [DAgentName, DParentName] = erlog_int:dderef([AgentName, ParentName]),
-    do_agent_predicate(DAgentName, DParentName, Next0, St).
-
-do_agent_predicate(BinAgentName, BinParentName, Next0, #est{} = St) when
-    is_binary(BinAgentName) andalso is_binary(BinParentName)->
-    case gproc:where({n,g, {BinAgentName, BinParentName}}) of
-        undefined ->
-            erlog_int:fail(St);
-        _ ->
-            erlog_int:prove_body(Next0, St)
-    end;
-
-do_agent_predicate(DAgentName, DParentName, Next0, #est{} = St) ->
-    GProcKey = {n, g, {to_query_param(DAgentName), to_query_param(DParentName)}},
-    MatchHead = {GProcKey, '_', '_'},
-    Guard = [],
-    Result = ['$$'],
-    SelectedAgents = gproc:select([{MatchHead, Guard, Result}]),
-    do_agent_predicate2(DAgentName, DParentName, Next0, St, SelectedAgents).
-
-do_agent_predicate2(_DAgentName, _DParentName, _Next0, St, []) ->
-    erlog_int:fail(St);
-
-do_agent_predicate2(DAgentName, DParentName, Next0, #est{bs = Bs, vn = Vn, cps = Cps} = St,
-    [[{_, _, {Ragent, Rparent}}, _, _] | Tail]) ->
-    ?INFO_MSG("Agent ~p",[{Ragent, Rparent}]),
-
-    case erlog_int:unify([DAgentName, DParentName], [Ragent, Rparent], Bs) of
-        {succeed, NewBs} ->
-            ?INFO_MSG("Unified Agent",[]),
-
-            FailFun =
-                fun(#cp{next=NextF,bs=Bs0,vn=Vnf}, LCps, Lst) ->
-                    do_agent_predicate2(DAgentName, DParentName, NextF, Lst#est{cps = LCps, bs = Bs0, vn = Vnf + 4}, Tail)
-                end,
-            Cp = #cp{type = compiled,
-                data = FailFun,
-                next = Next0,
-                bs = Bs,
-                vn = Vn},
-            erlog_int:prove_body(Next0, St#est{bs = NewBs, cps = [Cp|Cps]});
-        _ ->
-            ?INFO_MSG("NOT unified",[]),
-            erlog_int:fail(St)
-    end.
-
 %%------------------------------------------------------------------------------
 %% @doc
 %% @private
@@ -110,27 +51,14 @@ do_agent_predicate2(DAgentName, DParentName, Next0, #est{bs = Bs, vn = Vn, cps =
 %%------------------------------------------------------------------------------
 
 new_knowledge_base_predicate({_Atom, NameSpace}, Next0, #est{} = St) ->
-    AgentName = get(agent_name),
-    case bbs_ontology:create_kb_store(NameSpace, AgentName, bbs_db_ets) of
-        {ok, Est} ->
-            case bbs_agent:store_ontology_state_on_namespace(NameSpace, Est) of
-                undefined ->
-                    ?INFO_MSG("Crreated kb :~p", [NameSpace]),
-                    erlog_int:prove_body(Next0, St);
-                _ ->
-                    %% an kb with same namespace already exists
-                    erlog_int:fail(St)
-            end;
-        {error, _Reason} ->
-            erlog_int:fail(St)
-    end;
+    new_knowledge_base_predicate({_Atom, NameSpace, bbs_db_ets}, Next0, #est{} = St);
 new_knowledge_base_predicate({_Atom, NameSpace, Db_mod}, Next0, #est{} = St) ->
     AgentName = get(agent_name),
     case bbs_ontology:create_kb_store(NameSpace, AgentName, Db_mod) of
         {ok, Est} ->
             case bbs_agent:store_ontology_state_on_namespace(NameSpace, Est) of
                 undefined ->
-                    ?INFO_MSG("Crreated kb :~p", [NameSpace]),
+                    ?INFO_MSG("Created kb :~p", [NameSpace]),
                     erlog_int:prove_body(Next0, St);
                 _ ->
                     %% an kb with same namespace already exists
@@ -145,10 +73,10 @@ new_knowledge_base_predicate({_Atom, NameSpace, Db_mod}, Next0, #est{} = St) ->
 %-------------------------------------------------------------------------------
 
 prolog_interpretation_predicate({_Atom, PrologString, PrologTerms},
-    Next0,
-    #est{bs = Bs, vn = Vn} = St) ->
+                                Next0,
+                                #est{bs = Bs, vn = Vn} = St) ->
     DPrologString = erlog_int:dderef(PrologString, Bs),
-    PrologTerms = erlog_int:dderef(PrologTerms, Bs),
+    DPrologTerms = erlog_int:dderef(PrologTerms, Bs),
     ?INFO_MSG("Starting convertion predicate", []),
     case DPrologString of
         String when is_binary(String) ->
@@ -166,10 +94,10 @@ prolog_interpretation_predicate({_Atom, PrologString, PrologTerms},
                     {Goal1, NewBs, NewVn} = erlog_int:initial_goal(Goal0, Bs, Vn),
 
                     %% Convertion went fine
-                    erlog_int:unify_prove_body(PrologTerms,
-                        Goal1,
-                        Next0,
-                        St#est{bs = NewBs, vn = NewVn})
+                    erlog_int:unify_prove_body(DPrologTerms,
+                                               Goal1,
+                                               Next0,
+                                               St#est{bs = NewBs, vn = NewVn})
             end;
         _ ->
             %% Prolog String is either unbinded or something else than a string
@@ -225,8 +153,3 @@ unlistify([]) ->
     true;
 unlistify(G) ->
     G.                              %In case it wasn't a list.
-
-to_query_param({_}) ->
-  '_';
-to_query_param(Value) ->
-  Value.

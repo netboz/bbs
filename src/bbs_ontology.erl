@@ -23,13 +23,15 @@
 -export([get_registered_ont_desc/1, register_ontologies/1, create_kb_store/3,
          build_ontology/3]).
 % Built in predicates
--export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3]).
+-export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3, concat_binary_predicate/3]).
 % Utilities
 -export([prove/2, string_to_eterm/1, put_onto_hooks/3]).
 
 %% Built-in (erlang) Predicates included into all ontologies that will be registered
 -define(COMMON_BUILD_IN_PREDS,
-        [{{log, 3}, ?MODULE, lager_predicate},
+        [
+         {{concat, 3}, ?MODULE, concat_binary_predicate},
+         {{log, 3}, ?MODULE, lager_predicate},
          {{'::', 2}, ?MODULE, prove_external_ontology_predicate},
          {{type_of, 2}, ?MODULE, type_of_predicate}]).
 %% Predicates included into all ontologies that will be registered
@@ -119,6 +121,29 @@ validate_text_pred({string, StrPred}) ->
         Error ->
             Error
     end;
+validate_text_pred({file, App, Filename}) ->
+    BaseDir = c:pwd(),
+    PrivDir =
+        case code:priv_dir(App) of
+            {error, bad_name} ->
+                % This occurs when not running as a release; e.g., erl -pa ebin
+                % Of course, this will not work for all cases, but should account
+                % for most
+                "priv";
+            SomeDir ->
+                % In this case, we are running in a release and the VM knows
+                % where the application (and thus the priv directory) resides
+                % on the file system
+                SomeDir
+        end,
+    AbsPath = filename:join([BaseDir, PrivDir, "ontologies", Filename]),
+    case erlog_io:scan_file(AbsPath) of
+        {ok, _Terms} ->
+            ok;
+        Error ->
+            lager:info("Parse Error :~p", [Error]),
+            Error
+    end;    
 validate_text_pred({file, Filename}) ->
     PrivDir =
         case code:priv_dir(bbs) of
@@ -158,6 +183,10 @@ get_registered_ont_desc(NameSpace) ->
 %% @end
 %%------------------------------------------------------------------------------
 
+-spec build_ontology(AgentId :: binary(),
+                     NameSpace :: binary() | list(),
+                     DbMod :: atom()) ->
+                        tuple().
 build_ontology(AgentId, NameSpace, DbMod) when is_list(NameSpace) ->
     build_ontology(AgentId, iolist_to_binary(NameSpace), DbMod);
 build_ontology(AgentId, NameSpace, DbMod) ->
@@ -222,10 +251,44 @@ load_built_in_predicates(Built_in_predicates, #est{} = Est) ->
 
 load_prolog_predicates([], Est) ->
     {ok, Est};
+
+load_prolog_predicates([{file, App, File} | OtherPredicates], #est{} = Est) ->
+    BaseDir = c:pwd(),
+    PrivDir =
+        case code:priv_dir(App) of
+            {error, _Bad_name} ->
+                % This occurs when not running as a release; e.g., erl -pa ebin
+                % Of course, this will not work for all cases, but should account
+                % for most
+                "priv";
+            SomeDir ->
+                % In this case, we are running in a release and the VM knows
+                % where the application (and thus the priv directory) resides
+                % on the file system
+                SomeDir
+        end,
+    FullDir = filename:nativename(filename:join([BaseDir, PrivDir, "ontologies", File])),
+    try erlog_file:consult(FullDir,Est)
+    of
+        {ok, #est{} = NewEst} ->
+            ?INFO_MSG("Consulted : ~p",
+                      [filename:nativename(
+                           filename:join([PrivDir, "ontologies", File]))]),
+            load_prolog_predicates(OtherPredicates, NewEst);
+        Other ->
+            ?WARNING_MSG("Unexpected result while loading predicates from file :~p",
+                         [{File, Other}]),
+            {error, failed_consulting_predicates_from_file}
+    catch
+        M:E ->
+            ?ERROR_MSG("ERROR loading predicates from file :~p ~p", [M, E]),
+            {error, failed_consulting_predicates_from_file}
+    end;
+
 load_prolog_predicates([{file, File} | OtherPredicates], #est{} = Est) ->
     PrivDir =
         case code:priv_dir(bbs) of
-            {error, bad_name} ->
+            {error, _Bad_name} ->
                 % This occurs when not running as a release; e.g., erl -pa ebin
                 % Of course, this will not work for all cases, but should account
                 % for most
@@ -268,6 +331,9 @@ load_prolog_predicates([{text, TextualPrologPredicate} | OtherPredicates],
 load_prolog_predicates([Unk | OtherPredicates], Db) ->
     ?WARNING_MSG("Unrecognized intialisation predicate :~p", [Unk]),
     load_prolog_predicates(OtherPredicates, Db).
+
+
+
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -382,7 +448,6 @@ prove_external_ontology_predicate({_Atom,
 
     case bbs_agent:get_ontology_state_from_namespace(DDExternalOntNs) of
         #est{} = ExternalOntologyState ->
-
             DDExternalPredicate = erlog_int:dderef(ExternalOntologyPredicate, ParentBindings),
             case erlog_int:prove_goal(DDExternalPredicate,
                                       [],
@@ -390,6 +455,7 @@ prove_external_ontology_predicate({_Atom,
                                                                 vn = ParentVn})
             of
                 {succeed, #est{vn = NewVn} = NewExternalState} ->
+                    bbs_agent:store_ontology_state_on_namespace(ExternalOntologyNameSpace, NewExternalState),
                     DDResultPredicate =
                         erlog_int:dderef(DDExternalPredicate, NewExternalState#est.bs),
                     {succeed, NewBindings} =
@@ -414,7 +480,8 @@ prove_external_ontology_predicate({_Atom,
                                          ParentOntologyState#est{cps = [Cp | ParentCps],
                                                                  bs = NewBindings,
                                                                  vn = NewVn});
-                {fail, #est{} = _NewExternalState} ->
+                {fail, #est{} = NewExternalState} ->
+                    bbs_agent:store_ontology_state_on_namespace(ExternalOntologyNameSpace, NewExternalState),
                     erlog_int:fail(ParentOntologyState);
                 OtherResult ->
                     ?INFO_MSG("Unexpected result : ~p", [OtherResult]),
@@ -473,6 +540,18 @@ type_of_predicate_deref(Term, Type, Next0, #est{} = St) when is_list(Term) ->
     erlog_int:unify_prove_body(list, Type, Next0, St);
 type_of_predicate_deref(_, Type, Next0, #est{} = St) ->
     erlog_int:unify_prove_body(unknown_type, Type, Next0, St).
+
+
+
+
+concat_binary_predicate({_Atom, Left, Right, Concat}, Next0, #est{bs = Bs} = St) ->
+    case erlog_int:dderef([Left, Right], Bs) of 
+        [SL, SR] when is_binary(SL) andalso is_binary(SR) ->
+            erlog_int:unify_prove_body(Concat, <<SL/binary, SR/binary>>, Next0, St);
+        _ ->
+            erlog_int:fail(St)
+    end.
+
 
 %-------------------------------------------------------------------------------
 %  Utilities
@@ -537,10 +616,15 @@ prove(NameSpace, Predicate) when is_binary(NameSpace) ->
     ?INFO_MSG("Proving :~p", [{NameSpace, Predicate}]),
     case bbs_agent:get_ontology_state_from_namespace(NameSpace) of
         #est{} = Kb ->
-            prove(Kb, Predicate);
+            case erlog_int:prove_goal(Predicate, Kb) of
+                fail ->
+                    fail;
+                {succeed, State} ->
+                    bbs_agent:store_ontology_state_on_namespace(NameSpace, State),
+                    {succeed, State}
+            end;
         undefined ->
-            ?WARNING_MSG("No kb :~p ", [{NameSpace, Predicate, erlang:process_info(self(), dictionary)}]),
+            ?WARNING_MSG("No kb :~p ",
+                         [{NameSpace, Predicate, erlang:process_info(self(), dictionary)}]),
             fail
-    end;
-prove(Kb, Predicate) ->
-    erlog_int:prove_goal(Predicate, Kb).
+    end.
