@@ -7,7 +7,7 @@ pipelines:
         script:
           - apt-get update
           - apt-get install -y build-essential cmake erlang
-          - wget -O https://github.com/emqx/emqx/releases/download/v5.0.0-rc.2/emqx-5.0.0-rc.2-otp24.2.1-1-ubuntu20.04-amd64.deb
+          - wget "https://github.com/emqx/emqx/releases/download/v5.0.0-rc.2/emqx-5.0.0-rc.2-otp24.2.1-1-ubuntu20.04-amd64.deb"
           - sudo dpkg -i ./emqx-5.0.0-rc.2-otp24.2.1-1-ubuntu20.04-amd64.deb
           - mix local.hex --force
           - mix local.rebar --force
