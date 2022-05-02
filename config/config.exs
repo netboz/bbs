@@ -12,5 +12,6 @@ config_file = case Mix.env do
   _              -> "dev.config"
 end
 
+inspect("Using configuration :#{inspect(config_file)}")
 {:ok, [sys_config]} = :file.consult(Path.join('config', config_file))
 for {app, config} <- sys_config, do: config(app, config)
