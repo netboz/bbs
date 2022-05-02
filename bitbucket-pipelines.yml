@@ -3,18 +3,23 @@ pipelines:
     master:
     - step:
         image: elixir
-        
+        caches:
+          - deps
+          - build
         script:
           - apt-get update
           - apt-get install -y build-essential cmake erlang
-          - wget "https://github.com/emqx/emqx/releases/download/v5.0.0-rc.2/emqx-5.0.0-rc.2-otp24.2.1-1-ubuntu20.04-amd64.deb"
-          - dpkg -i ./emqx-5.0.0-rc.2-otp24.2.1-1-ubuntu20.04-amd64.deb
           - mix local.hex --force
           - mix local.rebar --force
           - mix deps.get
           - mix test
+        services: 
+          - emqx
  
 definitions:
+  services: 
+    emqx: 
+      image: emqx
   caches:
     deps: deps
     build: _build 
