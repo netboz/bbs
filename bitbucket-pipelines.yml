@@ -2,13 +2,11 @@ pipelines:
   branches:
     master:
     - step:
-        image: atlassian/default-image:3
-        caches:
-          - deps
-          - build
+        image: elixir
+        
         script:
           - apt-get update
-          - apt-get install -y build-essential cmake erlang elixir
+          - apt-get install -y build-essential cmake erlang
           - mix local.hex --force
           - mix local.rebar --force
           - mix deps.get
