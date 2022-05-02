@@ -5,13 +5,13 @@ config_file = "app.config"
 
 case Mix.env do
   # Config used in development environment
-  :test          -> config_file = dev.config
+  :test          -> config_file = "dev.config"
   # Configuration used in production
-  :prod_         -> config_file = prod.config
+  :prod_         -> config_file = "prod.config"
   # Configuration used in bitbucket pipeline
-  :pip           -> config_file = pip.config
+  :pip           -> config_file = "pip.config"
   # Default configuration : test
-  _              -> config_file = dev.config
+  _              -> config_file = "dev.config"
 end
 
 {:ok, [sys_config]} = :file.consult(Path.join('config', config_file))
