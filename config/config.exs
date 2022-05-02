@@ -10,6 +10,8 @@ case Mix.env do
   :prod_         -> config_file = prod.config
   # Configuration used in bitbucket pipeline
   :pip           -> config_file = pip.config
+  # Default configuration : test
+  _              -> config_file = dev.config
 end
 
 {:ok, [sys_config]} = :file.consult(Path.join('config', config_file))
