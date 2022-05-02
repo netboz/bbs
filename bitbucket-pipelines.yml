@@ -8,7 +8,7 @@ pipelines:
           - build
         script:
           - apt-get update
-          - apt-get install -y cmake
+          - apt-get install -y build-essential cmake
           - mix local.hex --force
           - mix local.rebar --force
           - mix deps.get
