@@ -49,7 +49,7 @@ defmodule Bbs.MixProject do
       # {:poolboy, git: "https://github.com/devinus/poolboy.git",
       #  branch: "master", override: true},
       # {:gun, [env: :prod, override: true, git: "https://github.com/emqx/gun", tag: "1.3.5"]},
-      # {:cowlib, "2.8.0", [env: :prod, repo: "hexpm", hex: "cowlib", override: true]},
+      # {:cowlib, "2.11.0", [env: :prod, repo: "hexpm", hex: "cowlib", override: true]},
       # {:cuttlefish, "~> 3.0", override: true, manager: :rebar3},
       # {:goldrush, ~r/.*/, github: "basho/goldrush", tag: "0.1.9", manager: :rebar3, override: true}
     ]
