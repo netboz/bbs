@@ -11,7 +11,7 @@ pipelines:
           - apt-get install -y build-essential cmake erlang
           - mix local.hex --force
           - mix local.rebar --force
-          - MIX_ENV=test mix deps.get
+          - MIX_ENV=pip mix deps.get
           - mix test
         services: 
           - emqx
