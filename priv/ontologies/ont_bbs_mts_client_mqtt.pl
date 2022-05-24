@@ -21,7 +21,6 @@ connections_initiated([connection(Domain, Port, ClientId, Options, Subscriptions
 
 subscriptions_initiated(_Domain, []).
 subscriptions_initiated(Domain, [subscription(Topic)|OtherSubscriptions]) :-
-    log(info,"Initiating subscriptions ~p", [Topic]),
     goal(subscribed(Topic, Domain)),
     subscriptions_initiated(Domain, OtherSubscriptions). 
 
@@ -35,7 +34,6 @@ initialize(AgentId, Parent, Node, Params) :-
 
 action(assert(connection(Domain, Port, ClientId, Pid, Connection_options)), 
         [
-            log(info,"Prolog connect", []),
             connect(Domain, Port, ClientId, Pid, Connection_options),
             "bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", 
                 up(connection(Domain, Port, ClientId, Pid, Connection_options))))
@@ -49,14 +47,13 @@ subscribed(Topic) :-
 
 subscribed(Topic, Domain) :-
     connection(Domain, _, _, Pid, _),
-    log(info,"Before connect", []),
     mqtt_subscribed(Topic, Pid).
 
 
 
 action(goal(subscribed(Topic,"localhost")) ,[] , subscribed(Topic)).
-action("bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", 
-        subscribed(Topic, Domain))), [connection(Domain, _, _, Pid, _), subscribe(Pid, Topic)], 
+action("bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", subscribed(Topic, Domain))), 
+        [connection(Domain, _, _, Pid, _), mqtt_subscribe(Pid, Topic)], 
         subscribed(Topic, Domain)).
 
 

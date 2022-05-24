@@ -22,7 +22,8 @@
         [{{connect, 5}, ?MODULE, connect_predicate},
          {{connect_async, 2}, ?MODULE, connect_async_predicate},
          {{mqtt_publish, 4}, ?MODULE, mqtt_publish_predicate},
-         {{mqtt_subscribed, 2}, ?MODULE, mqtt_subscribed_predicate}
+         {{mqtt_subscribed, 2}, ?MODULE, mqtt_subscribed_predicate},
+         {{mqtt_subscribe, 2}, ?MODULE, mqtt_subscribe_predicate}
         ]).
 
 %% API
