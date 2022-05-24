@@ -43,7 +43,16 @@ connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
     ?DEBUG("Conneting to mqtt", []),
     [DClientId, DConnection_options] = erlog_int:dderef([ClientId, Connection_options], Bs0),
 
-    case erlog:vars_in(DConnection_options) of
+
+    FOptions = case DConnection_options of 
+        {_} -> 
+            [];
+        _ ->
+            DConnection_options
+        end,
+
+
+    case erlog:vars_in(FOptions) of
         [] ->
             {ClientDomain, Bs1} =
                 case erlog_int:dderef(Domain, Bs0) of
@@ -84,7 +93,7 @@ connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
                                 {host, ClientDomain},
                                 {port, ClientPort}]
                                ++ ClientIdEntry,
-                               DConnection_options),
+                               FOptions),
 
             case gen_statem:start(emqtt, [Options2], []) of
                 {ok, PidClient} ->
@@ -113,6 +122,7 @@ connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
                     erlog_int:fail(St)
             end;
         _ ->
+            ?ERROR_MSG("Bindings in options : ~p", [DConnection_options]),
             erlog_int:fail(St)
     end;
 connect_predicate({_, _Domain, _Port, _ClientId, _, _Connection_options}, _Next0, St) ->
