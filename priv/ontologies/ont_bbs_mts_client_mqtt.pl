@@ -8,7 +8,8 @@ action(initialize(AgentId, Parent, Node, Params),
     assert(node(Node)),
     "bbs:agent"::assert(message_transport_ontology("bbs:mts:client:mqtt")),
     pairs_key_value(Params, clients(ClientList)),
-    connections_initiated(ClientList)
+    connections_initiated(ClientList),
+    sent("/tests/bob","couocuo")
     ],
     initialized(AgentId, Parent, Node, Params)).
 
@@ -74,17 +75,10 @@ action(assert(cc(CcId, Me, Node, Domain, ClientId)),
     ],
     cc(CcId, ClientId)).
 
-%% action(join_cc(CcId, Ontology),
-%%     [\+"bbs:agent:ccs"::cc(_, CcId, _, _, _), client(Pid, "localhost")],
-%%         cc(CcId, Ontology)).
-
 %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%% send a message %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-action(mqtt_send(CcId, Message), [], sent(CcId, Message)).
+action(goal(sent(CcId, Payload, "localhost")), [], sent(CcId, Payload)).
 
-
-
-
-%cc(CcId, Ag, Node, Domain, ClientId).
+action(mqtt_publish(Pid, CcId, Payload, []), [connection(Domain, _, ClientId, Pid, _)], sent(CcId, Payload, Domain)).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
