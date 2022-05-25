@@ -542,9 +542,14 @@ type_of_predicate_deref(_, Type, Next0, #est{} = St) ->
     erlog_int:unify_prove_body(unknown_type, Type, Next0, St).
 
 
+concat_binary_predicate({_, Head, Tail, Result}, Next0, #est{bs = Bs} = St ) ->
+    [DHead, DTail, DResult] = erlog_int:dderef([Head, Tail, Result], Bs),
+    concat_binary_predicate2(DHead, DTail, DResult, Next0, St).
+%% Mothing binded, we fail
+concat_binary_predicate2({_}, {_}, {_}, _Next0, #est{} = St ) ->
+    erlog_int:fail(St);
 
-
-concat_binary_predicate({_Atom, Left, Right, Concat}, Next0, #est{bs = Bs} = St) ->
+concat_binary_predicate2(Left, Right, {_} = Concat, Next0, #est{bs = Bs} = St) ->
     case erlog_int:dderef([Left, Right], Bs) of 
         [SL, SR] when is_binary(SL) andalso is_binary(SR) ->
             erlog_int:unify_prove_body(Concat, <<SL/binary, SR/binary>>, Next0, St);

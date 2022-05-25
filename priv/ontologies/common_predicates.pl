@@ -1,5 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Actions processing %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+goal(NameSpace::Goal) :-
+     NameSpace::goal(Goal).
+
 goal(Goal) :-
     call(Goal).
 
