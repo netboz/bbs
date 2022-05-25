@@ -489,7 +489,6 @@ prove_external_ontology_predicate({_Atom,
                     OtherResult
             end;
         undefined ->
-            ?ERROR_MSG("External ontology not found : ~p", [DDExternalOntNs]),
             erlog_int:fail(ParentOntologyState)
     end.
 
