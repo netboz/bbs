@@ -115,7 +115,7 @@ ontologies_init(cast,
                                       KbReady)
             of
                 {succeed, _InitializedOntoState} ->
-                    erlog_int:prove_goal({goal, {tested, Ns}}, KbReady),
+                    %erlog_int:prove_goal({goal, {tested, Ns}}, KbReady),
                     {next_state,
                      ontologies_init,
                      State,
