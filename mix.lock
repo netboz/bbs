@@ -23,7 +23,7 @@
   "plain_fsm": {:hex, :plain_fsm, "1.4.1", "47e9bf6ac9322fc7586fb6df8de7198391e93764571c75165f2c45b27acde1d0", [:rebar3], [], "hexpm", "6ce2e7efdcdc516eebced22a6ed2b1ab760f8275ee230f7c80b48dd32ae0da39"},
   "plumtree": {:hex, :plumtree, "0.6.0", "b347d5faa640419160cb9dbadf624123a6c0c66acf7886f36f3f6aeac99253fa", [:rebar3], [{:lager, "~>3.5", [hex: :lager, repo: "hexpm", optional: false]}, {:lasp_support, "~>0.1", [hex: :lasp_support, repo: "hexpm", optional: false]}, {:partisan, "~>4.1", [hex: :partisan, repo: "hexpm", optional: false]}], "hexpm", "12ebbbf22d0ecc10f50374ed8007693ff4e558838974e03e124c68ba87774b08"},
   "quicer": {:git, "https://github.com/emqx/quic.git", "348c08a3f5a3b90861906fb436ff0ced453adfa2", [tag: "0.0.8"]},
-  "quickrand": {:hex, :quickrand, "2.0.2", "1d73faa52e0c149fcbc72a63c26135ff68be8fa7870675c73645896788a7540c", [:rebar3], [], "hexpm", "e21c6c7f29ca995468662085ca54d7d09e861c180a9dfec2cf4a2e75364a16d6"},
+  "quickrand": {:git, "https://github.com/okeuday/quickrand.git", "21b4afa206edfe16baa50d74661d9585dd2e60eb", []},
   "snabbkaffe": {:git, "https://github.com/kafka4beam/snabbkaffe.git", "2f2f6ad09b97e33ba66b195665cef17d04598abd", [tag: "0.13.0"]},
   "swarm": {:hex, :swarm, "3.4.0", "64f8b30055d74640d2186c66354b33b999438692a91be275bb89cdc7e401f448", [:mix], [{:gen_state_machine, "~> 2.0", [hex: :gen_state_machine, repo: "hexpm", optional: false]}, {:libring, "~> 1.0", [hex: :libring, repo: "hexpm", optional: false]}], "hexpm", "94884f84783fc1ba027aba8fe8a7dae4aad78c98e9f9c76667ec3471585c08c6"},
   "telemetry": {:hex, :telemetry, "0.4.3", "a06428a514bdbc63293cd9a6263aad00ddeb66f608163bdec7c8995784080818", [:rebar3], [], "hexpm", "eb72b8365ffda5bed68a620d1da88525e326cb82a75ee61354fc24b844768041"},

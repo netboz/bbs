@@ -16,6 +16,9 @@
 start(_StartType, _StartArgs) ->
   register(bbs, self()),
 
+  %% Seed random number generator
+  quickrand:seed(),
+
   % Create ontologies index
   ets:new(?ONTO_STORE, [named_table, set, protected, {read_concurrency, true}]),
 

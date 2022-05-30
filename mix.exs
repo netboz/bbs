@@ -37,6 +37,7 @@ defmodule Bbs.MixProject do
       {:erlog, git: "git@bitbucket.org:netboz/erlog_bbs.git", branch: "master"},
       {:uuid, git: "https://github.com/okeuday/uuid.git", branch: "master"},
       {:cowlib, "2.11.0", [env: :prod, repo: "hexpm", hex: "cowlib", override: true]},
+      {:quickrand, git: "https://github.com/okeuday/quickrand.git", override: true},
       {:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"},
       ## For tests
       {:mix_erlang_tasks, "0.1.0"}

@@ -30,6 +30,7 @@
 %% Built-in (erlang) Predicates included into all ontologies that will be registered
 -define(COMMON_BUILD_IN_PREDS,
         [
+         {{rand, 1}, ?MODULE, rand_predicate},   
          {{concat, 3}, ?MODULE, concat_binary_predicate},
          {{log, 3}, ?MODULE, lager_predicate},
          {{'::', 2}, ?MODULE, prove_external_ontology_predicate},
