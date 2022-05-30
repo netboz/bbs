@@ -23,7 +23,7 @@
 -export([get_registered_ont_desc/1, register_ontologies/1, create_kb_store/3,
          build_ontology/3]).
 % Built in predicates
--export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3, concat_binary_predicate/3]).
+-export([lager_predicate/3, prove_external_ontology_predicate/3, type_of_predicate/3, concat_binary_predicate/3, rand_predicate/3]).
 % Utilities
 -export([prove/2, string_to_eterm/1, put_onto_hooks/3]).
 
@@ -407,6 +407,12 @@ load_ontology_built_in_predicate(OntMod, Kb) when is_atom(OntMod) ->
 %==============================================================================
 % Built in predicates common to all ontologies
 %==============================================================================
+
+
+
+rand_predicate({_Atom, Rand}, Next0, #est{bs = Bs} = St) ->
+    erlog_int:unify_prove_body(Rand, quickrand:strong_float(), Next0, St).
+
 
 %%------------------------------------------------------------------------------
 %% @doc
