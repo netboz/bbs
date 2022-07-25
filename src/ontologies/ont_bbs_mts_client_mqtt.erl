@@ -228,8 +228,8 @@ mqtt_subscribe_predicate({_, Client, Topic}, Next0, #est{bs = Bs} = St) ->
 
 
 mqtt_publish_predicate({_, Client, Topic, Payload, Options}, Next0, #est{bs = Bs} = St) ->
-    Vars = [DClient, DTopic, DPayload] = erlog_int:dderef([Client, Topic, Payload], Bs),
-    ?INFO_MSG("--------> Published ~p    ~p    ~p", [Client, DTopic, DPayload]),
+    Vars = [DClient, DTopic] = erlog_int:dderef([Client, Topic], Bs),
+    ?INFO_MSG("--------> Published ~p    ~p    ~p", [Client, DTopic, Payload]),
 
     OptionsFinal =
         case Options of
@@ -241,10 +241,10 @@ mqtt_publish_predicate({_, Client, Topic, Payload, Options}, Next0, #est{bs = Bs
 
     case erlog:vars_in(Vars) of
         [] ->
-            FinalP = case DPayload of 
+            FinalP = case Payload of 
                 BinPayload when is_binary(BinPayload) -> BinPayload;
                 TermPayload ->
-                    BinPayload = list_to_binary(lists:flatten(io_lib:format("~p",[TermPayload])))
+                    list_to_binary(lists:flatten(io_lib:format("~p",[TermPayload])))
                 end,
 
 
