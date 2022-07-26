@@ -49,13 +49,9 @@ subscribed(Topic, Domain) :-
     connection(Domain, _, _, Pid, _),
     mqtt_subscribed(Topic, Pid).
 
-
-
-action(goal(subscribed(Topic,"localhost")) ,[] , subscribed(Topic)).
 action("bbs:agent"::goal(stim_processed("bbs:mts:client:mqtt", subscribed(Topic, Domain))), 
         [connection(Domain, _, _, Pid, _), mqtt_subscribe(Pid, Topic)], 
         subscribed(Topic, Domain)).
-
 
 action(mqtt_publish(Pid, Topic, Payload, Options),[connection(Domain, _, ClientId, Pid, _)], 
     published(Payload, Topic, Domain, Options)).
