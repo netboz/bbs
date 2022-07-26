@@ -137,7 +137,7 @@ msg_handler(Msg, Pid) ->
        maps:get(dup, Msg),
        maps:get(retain, Msg),
        maps:get(packet_id, Msg),
-       maps:get(topic, Msg),
+       binary:split(maps:get(topic, Msg),[<<"/">>],[global]),
        maps:get(payload, Msg)}.
 
 disconnected(Data) ->
