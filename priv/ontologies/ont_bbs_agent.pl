@@ -27,7 +27,9 @@ initialize(AgentId, Parent, NameSpace, Params) :-
 %% cast -> async_event
 %% info -> info_event
 
-action(process_agent_event(Type, Message), [log(debug,"Processing event : ~p",[{Type, Message}])], agent_event_processed(Type, Message)).
+action(process_agent_event(Type, Message), 
+    [log(debug,"Processing event : ~p",[{Type, Message}])], 
+    agent_event_processed(Type, Message)).
 
 %% @doc: process_agent_events(+Type, +Message)
 %% Effectively execute stims and delete needed ones
@@ -38,13 +40,11 @@ process_agent_event(Type, Message) :-
 do_process_agent_event(Type, Message) :-
     Head = event(Type, Message, Options),
     "bbs:agent:event_handlers"::clause(Head, Body),
-    cutted_goal("bbs:agent:event_handlers"::Head),
+    "bbs:agent:event_handlers"::Head,
+    !,
     member(once, Options),
     "bbs:agent:event_handlers"::retract(( Head :- Body )),
     fail.
-
-cutted_goal(Goal) :-
-    Goal,!.
 
 %% @doc: react_on(+Event_type, +Event_patten, +Ontology_reaction, +Predicate)
 %% Set a hook to gen_fsm:handle(Type, Event_patten, _State) that prove Ontology_reaction:Predicate
