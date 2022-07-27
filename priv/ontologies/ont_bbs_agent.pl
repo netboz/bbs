@@ -95,8 +95,6 @@ do_process_stim(StimOnt, StimMessage) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% other agents related predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Messaging related predicate %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% @doc: cc(CcId:IN:string())
