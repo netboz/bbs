@@ -38,7 +38,7 @@ defmodule Bbs.MixProject do
       {:uuid, git: "https://github.com/okeuday/uuid.git", branch: "master"},
       {:cowlib, "2.11.0", [env: :prod, repo: "hexpm", hex: "cowlib", override: true]},
       {:quickrand, git: "https://github.com/okeuday/quickrand.git", override: true},
-      {:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master"},
+      {:emqtt, git: "https://github.com/emqx/emqtt.git", branch: "master", system_env: [{"BUILD_WITHOUT_QUIC", "1"}]},
       ## For tests
       {:mix_erlang_tasks, "0.1.0"}
 
