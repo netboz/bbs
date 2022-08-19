@@ -34,7 +34,7 @@ defmodule Bbs.MixProject do
     [
       {:lager, ">= 0.0.0", override: true},
       {:horde, "~> 0.8.4"},
-      {:erlog, git: "git@bitbucket.org:netboz/erlog_bbs.git", branch: "master"},
+      {:erlog, git: "git@gitlab.com:yan.guiborat1/erlog_bbs.git", branch: "master"},
       {:uuid, git: "https://github.com/okeuday/uuid.git", branch: "master"},
       {:cowlib, "2.11.0", [env: :prod, repo: "hexpm", hex: "cowlib", override: true]},
       {:quickrand, git: "https://github.com/okeuday/quickrand.git", override: true},
