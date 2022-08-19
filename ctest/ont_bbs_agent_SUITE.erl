@@ -7,15 +7,13 @@
 %% Test server callbacks
 -export([all/0, init_per_testcase/2, end_per_testcase/2, init_per_suite/1,
          end_per_suite/1]).
--export([test_agent_pred/1]).
 -export([mocked_agent/2]).
 
 all() ->
-  [test_agent_pred].
+  [].
 
 init_per_suite(Configdata) ->
   application:ensure_all_started(bbs),
-  application:start(bbs),
   Configdata.
 
 end_per_suite(_Configdata) ->
