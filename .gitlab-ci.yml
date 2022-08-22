@@ -12,12 +12,6 @@ image: elixir:latest
 variables:
   MIX_ENV: "test"
 
-cache:
-  paths:
-    - _build
-    - deps
-
-
 services:
   - redis:latest
 
