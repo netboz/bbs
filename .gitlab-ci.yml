@@ -9,6 +9,9 @@
 
 image: elixir:latest
 
+variables:
+  MIX_ENV: "test"
+
 services:
   - redis:latest
 
