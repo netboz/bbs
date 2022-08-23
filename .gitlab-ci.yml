@@ -66,8 +66,3 @@ before_script:
 common_tests:
   script:
     - mix ct
-
-lint:
-  stage: test
-  script:
-    - mix credo
