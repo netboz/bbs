@@ -70,5 +70,4 @@ common_tests:
 lint:
   stage: test
   script:
-    - mix format --check-formatted
     - mix credo
