@@ -1,4 +1,5 @@
 .rebar3
+.erlang.mk
 _*
 .eunit
 *.o
@@ -15,6 +16,7 @@ erl_crash.dump
 logs
 ctest/logs
 *.log
+*.d
 _build
 .idea
 erlang_ls.config
