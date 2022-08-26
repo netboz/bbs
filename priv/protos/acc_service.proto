@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package eGem;
+
+service acc_service
+{
+
+    rpc send_predicate(stream predicate) returns (stream predicate_result) {}
+  
+}
+
+message predicate {
+    string query                = 1;
+    string metadata             = 2;
+}
+
+message predicate_result {
+    string query_result         = 1;
+    string metadata             = 2;
+}
