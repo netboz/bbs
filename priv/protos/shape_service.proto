@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package eGem;
+
+import "./priv/protos/global_defs.proto";
+
+service shape_service
+{
+    rpc add_shape_component(add_shape_component_parameters) returns (generic_result_code) {}
+    rpc remove_shape_components(m_entity_id) returns (generic_result_code) {}
+}
+
+enum shape_type {
+    primitive = 0;
+    mesh  = 1;
+}
+
+enum m_primitive_type {
+    sphere = 0;
+    box  = 1;
+}
+
+
+
+enum m_mesh_source {
+    asset_processor = 0;
+    file = 1;
+    url = 2;
+}
+
+message m_mesh_parameters {
+    m_mesh_source   mesh_source = 1;
+    string          mesh_location = 2;
+    }
+
+message m_primitive_box_parameters {
+    vector3 corner_1 = 1;
+    vector3 corner_2 = 2;
+}
+
+message m_primitive_sphere_parameters {
+    float radius = 1;
+}
+
+message m_primitive_parameters_message {
+    m_primitive_type primitive_type = 1;
+    oneof primitive_parameters {
+        m_primitive_box_parameters primitive_box_parameters = 2;
+        m_primitive_sphere_parameters primitive_sphere_parameters = 3;
+    }
+}
+
+message add_shape_component_parameters {
+    uint64 entity_id = 1;
+    shape_type type = 2;
+    oneof parameters {
+        m_mesh_parameters mesh_parameters = 31;
+        m_primitive_parameters_message primitive_parameters = 32;
+    }
+}
+

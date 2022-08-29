@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package eGem;
+
+
+message m_entity_id {
+    uint64 entity_id = 1;
+}
+
+message generic_result_code {
+    enum enum_generic_result_code {
+        ok                          = 0;
+        failed                      = 1;
+        not_found                   = 2;
+        invalid_parameter           = 3;
+        unimplemented               = 4;
+        deactivate_first            = 5;
+        activate_first              = 6;
+        entity_not_initialised      = 7;
+        component_already_exists    = 8;
+    } 
+    enum_generic_result_code result_code = 1;
+    }
+
+message vector3
+{
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+
+message vector4
+{
+    float w = 1;
+    float x = 2;
+    float y = 3;
+    float z = 4;
+}

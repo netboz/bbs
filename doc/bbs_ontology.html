@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Module bbs_ontology</title>
+<link rel="stylesheet" type="text/css" href="stylesheet.css" title="EDoc">
+</head>
+<body bgcolor="white">
+<div class="navbar"><a name="#navbar_top"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<hr>
+
+<h1>Module bbs_ontology</h1>
+<ul class="index"><li><a href="#description">Description</a></li><li><a href="#index">Function Index</a></li><li><a href="#functions">Function Details</a></li></ul>.
+<p>Copyright © (C) 2020, QengHo</p>
+
+<p><b>Authors:</b> Yan.</p>
+
+<h2><a name="description">Description</a></h2>
+  
+<h2><a name="index">Function Index</a></h2>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#build_ontology-3">build_ontology/3</a></td><td>
+  Given a namespace and kb store module, fully build the initial ontology state.</td></tr>
+<tr><td valign="top"><a href="#concat_binary_predicate-3">concat_binary_predicate/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#create_kb_store-3">create_kb_store/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#get_registered_ont_desc-1">get_registered_ont_desc/1</a></td><td>
+  Return the description of an ontology upon the given namespace
+  syntaxically corrects.</td></tr>
+<tr><td valign="top"><a href="#lager_predicate-3">lager_predicate/3</a></td><td>
+  Built in predicate.</td></tr>
+<tr><td valign="top"><a href="#prove-2">prove/2</a></td><td>
+  Prove Namespace::Predicate in ontology stored into Kb
+  Not sure if this function will be kept.</td></tr>
+<tr><td valign="top"><a href="#put_onto_hooks-3">put_onto_hooks/3</a></td><td>
+  Add a hook ( namespace:predicate(parameters) ) to react to.</td></tr>
+<tr><td valign="top"><a href="#rand_predicate-3">rand_predicate/3</a></td><td></td></tr>
+<tr><td valign="top"><a href="#register_ontologies-1">register_ontologies/1</a></td><td>
+  Register a list of ontologies availables to all bubbles on this node.</td></tr>
+<tr><td valign="top"><a href="#string_to_eterm-1">string_to_eterm/1</a></td><td>
+  Convert a predicate string to its eterm representation.</td></tr>
+</table>
+
+<h2><a name="functions">Function Details</a></h2>
+
+<h3 class="function"><a name="build_ontology-3">build_ontology/3</a></h3>
+<div class="spec">
+<p><tt>build_ontology(AgentId::binary(), NameSpace::binary() | list(), DbMod::atom()) -&gt; tuple()</tt><br></p>
+<p> </p>
+</div><p>
+  Given a namespace and kb store module, fully build the initial ontology state</p>
+
+<h3 class="function"><a name="concat_binary_predicate-3">concat_binary_predicate/3</a></h3>
+<div class="spec">
+<p><tt>concat_binary_predicate(X1, Next0, Est) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="create_kb_store-3">create_kb_store/3</a></h3>
+<div class="spec">
+<p><tt>create_kb_store(NameSpace, AgentId, DbMod) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="get_registered_ont_desc-1">get_registered_ont_desc/1</a></h3>
+<div class="spec">
+<p><tt>get_registered_ont_desc(NameSpace) -&gt; any()</tt></p>
+<p> </p>
+</div><p>
+  Return the description of an ontology upon the given namespace
+  syntaxically corrects.</p>
+
+<h3 class="function"><a name="lager_predicate-3">lager_predicate/3</a></h3>
+<div class="spec">
+<p><tt>lager_predicate(X1, Next0, Est) -&gt; any()</tt></p>
+<p> </p>
+</div><p>
+  Built in predicate. Call to Lager logging api from Prolog</p>
+
+<h3 class="function"><a name="prove-2">prove/2</a></h3>
+<div class="spec">
+<p><tt>prove(NameSpace, Predicate) -&gt; any()</tt></p>
+<p> </p>
+</div><p>
+  Prove Namespace::Predicate in ontology stored into Kb
+  Not sure if this function will be kept</p>
+
+<h3 class="function"><a name="put_onto_hooks-3">put_onto_hooks/3</a></h3>
+<div class="spec">
+<p><tt>put_onto_hooks(X1, X2, Options) -&gt; any()</tt></p>
+<p> </p>
+</div><p>
+  Add a hook ( namespace:predicate(parameters) ) to react to.</p>
+
+<h3 class="function"><a name="rand_predicate-3">rand_predicate/3</a></h3>
+<div class="spec">
+<p><tt>rand_predicate(X1, Next0, Est) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="register_ontologies-1">register_ontologies/1</a></h3>
+<div class="spec">
+<p><tt>register_ontologies(Others) -&gt; any()</tt></p>
+<p> </p>
+</div><p>
+  Register a list of ontologies availables to all bubbles on this node</p>
+
+<h3 class="function"><a name="string_to_eterm-1">string_to_eterm/1</a></h3>
+<div class="spec">
+<p><tt>string_to_eterm(String::list()) -&gt; tuple</tt><br></p>
+<p> </p>
+</div><p>
+  Convert a predicate string to its eterm representation</p>
+<hr>
+
+<div class="navbar"><a name="#navbar_bottom"></a><table width="100%" border="0" cellspacing="0" cellpadding="2" summary="navigation bar"><tr><td><a href="overview-summary.html" target="overviewFrame">Overview</a></td><td><a href="http://www.erlang.org/"><img src="erlang.png" align="right" border="0" alt="erlang logo"></a></td></tr></table></div>
+<p><i>Generated by EDoc</i></p>
+</body>
+</html>

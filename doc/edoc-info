@@ -1,0 +1,5 @@
+%% encoding: UTF-8
+{application,bbs}.
+{modules,[bbs_agent,bbs_agent_sup,bbs_app,bbs_db_ets,bbs_db_redis,
+          bbs_ontology,bbs_sup,ont_bbs_agent,ont_bbs_bubble,
+          ont_bbs_mts_client_mqtt,ont_bbs_mts_client_registry]}.

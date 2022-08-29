@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package eGem;
+
+import "./priv/protos/global_defs.proto";
+
+service entity_service
+{
+
+    rpc create_entity(create_entity_params) returns (entity_creation_result) {}
+    rpc activate_entity(m_entity_id) returns (generic_result_code) {}
+    rpc deactivate_entity(m_entity_id) returns (generic_result_code) {}
+    rpc delete_entity(m_entity_id) returns (generic_result_code) {}
+
+}
+
+
+message create_entity_params {
+    string name                     = 1;
+    uint64 entity_id                = 2;
+    vector3 initial_position        = 3;
+    bool activate                   = 4;
+}
+
+message entity_creation_result {
+    generic_result_code result_code = 1;
+    uint64 entity_id                = 2;
+}
+
+
+
+
+
+
