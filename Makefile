@@ -23,12 +23,18 @@ $(REBAR3):
 	wget $(REBAR3_URL) || curl -Lo rebar3 $(REBAR3_URL)
 	@chmod a+x rebar3
 
+shell:
+	@$(REBAR3) shell
 deps:
 	@$(REBAR3) get-deps
-
+lint:
+	@$(REBAR3) lint
+dyalizer:
+	@$(REBAR3) dialyzer
 clean:
 	@$(REBAR3) clean
-
+typer:
+	@$(REBAR3) typer
 distclean: clean
 	@$(REBAR3) delete-deps
 

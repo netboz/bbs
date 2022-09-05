@@ -16,40 +16,44 @@
 
 %% Prolog API
 
--define(ERLANG_PREDS,
-        [{{connect, 5}, ?MODULE, connect_predicate},
-         {{connect_async, 2}, ?MODULE, connect_async_predicate},
-         {{mqtt_publish, 4}, ?MODULE, mqtt_publish_predicate},
-         {{mqtt_subscribed, 2}, ?MODULE, mqtt_subscribed_predicate},
-         {{mqtt_subscribe, 2}, ?MODULE, mqtt_subscribe_predicate}
-        ]).
+-define(ERLANG_PREDS, [
+    {{connect, 5}, ?MODULE, connect_predicate},
+    {{connect_async, 2}, ?MODULE, connect_async_predicate},
+    {{mqtt_publish, 4}, ?MODULE, mqtt_publish_predicate},
+    {{mqtt_subscribed, 2}, ?MODULE, mqtt_subscribed_predicate},
+    {{mqtt_subscribe, 2}, ?MODULE, mqtt_subscribe_predicate}
+]).
 
 %% API
 -export([external_predicates/0]).
 -export([perform_connect/3, msg_handler/2, disconnected/1]).
 -export([connect_predicate/3, connect_async_predicate/3]).
--export([mqtt_subscribed_predicate/3, mqtt_subscribe_predicate/3,
-         mqtt_publish_predicate/3]).
+-export([
+    mqtt_subscribed_predicate/3,
+    mqtt_subscribe_predicate/3,
+    mqtt_publish_predicate/3
+]).
 
 external_predicates() ->
     ?ERLANG_PREDS.
 
 %new_client_predicate({_, Host, Port, PidClientOut}, Next0, #est{bs = Bs} = St) ->
 
-connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
-                  Next0,
-                  #est{bs = Bs0} = St) ->
+connect_predicate(
+    {_, Domain, Port, ClientId, {_} = Pid, ConnectionOptions},
+    Next0,
+    #est{bs = Bs0} = St
+) ->
     ?DEBUG("Conneting to mqtt", []),
-    [DClientId, DConnection_options] = erlog_int:dderef([ClientId, Connection_options], Bs0),
+    [DClientId, DConnectionOptions] = erlog_int:dderef([ClientId, ConnectionOptions], Bs0),
 
-
-    FOptions = case DConnection_options of 
-        {_} -> 
-            [];
-        _ ->
-            DConnection_options
+    FOptions =
+        case DConnectionOptions of
+            {_} ->
+                [];
+            _ ->
+                DConnectionOptions
         end,
-
 
     case erlog:vars_in(FOptions) of
         [] ->
@@ -84,15 +88,20 @@ connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
                 end,
 
             Options2 =
-                lists:keymerge(1,
-                               [{msg_handler,
-                                 #{disconnected => fun disconnected/1,
-                                   publish => {?MODULE, msg_handler, [AgentPid]}}},
-                                {owner, AgentPid},
-                                {host, ClientDomain},
-                                {port, ClientPort}]
-                               ++ ClientIdEntry,
-                               FOptions),
+                lists:keymerge(
+                    1,
+                    [
+                        {msg_handler, #{
+                            disconnected => fun disconnected/1,
+                            publish => {?MODULE, msg_handler, [AgentPid]}
+                        }},
+                        {owner, AgentPid},
+                        {host, ClientDomain},
+                        {port, ClientPort}
+                    ] ++
+                        ClientIdEntry,
+                    FOptions
+                ),
 
             case gen_statem:start(emqtt, [Options2], []) of
                 {ok, PidClient} ->
@@ -104,10 +113,12 @@ connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
                                 {succeed, NewBs} ->
                                     %% This should always be true
                                     ?INFO_MSG("Client connected ~p", [FinalClientID]),
-                                    erlog_int:unify_prove_body(Pid,
-                                                               PidClient,
-                                                               Next0,
-                                                               St#est{bs = NewBs});
+                                    erlog_int:unify_prove_body(
+                                        Pid,
+                                        PidClient,
+                                        Next0,
+                                        St#est{bs = NewBs}
+                                    );
                                 _ ->
                                     emqtt:disconnect(PidClient),
                                     erlog_int:fail(St)
@@ -116,27 +127,22 @@ connect_predicate({_, Domain, Port, ClientId, {_} = Pid, Connection_options},
                             ?INFO_MSG("Error connecting mqtt client ~p", [Reason]),
                             erlog_int:fail(St)
                     end;
-                {error, _Error} ->
-                    ?INFO_MSG("Error strating mqtt client ~p", [_Error]),
+                {error, Error} ->
+                    ?INFO_MSG("Error strating mqtt client ~p", [Error]),
                     erlog_int:fail(St)
             end;
         _ ->
-            ?ERROR_MSG("Bindings in options : ~p", [DConnection_options]),
+            ?ERROR_MSG("Bindings in options : ~p", [DConnectionOptions]),
             erlog_int:fail(St)
     end;
-connect_predicate({_, _Domain, _Port, _ClientId, _, _Connection_options}, _Next0, St) ->
+connect_predicate({_, _Domain, _Port, _ClientId, _, _ConnectionOptions}, _Next0, St) ->
     erlog_int:fail(St).
 
 msg_handler(Msg, Pid) ->
     ?INFO_MSG("Processing publish ~p to ~p", [Msg, Pid]),
-    Pid
-    ! {incoming_mqtt_message,
-       maps:get(qos, Msg),
-       maps:get(dup, Msg),
-       maps:get(retain, Msg),
-       maps:get(packet_id, Msg),
-       maps:get(topic, Msg),
-       maps:get(payload, Msg)}.
+    Pid !
+        {incoming_mqtt_message, maps:get(qos, Msg), maps:get(dup, Msg), maps:get(retain, Msg),
+            maps:get(packet_id, Msg), maps:get(topic, Msg), maps:get(payload, Msg)}.
 
 disconnected(Data) ->
     ?INFO_MSG("DISCONNECTED ~p", [Data]).
@@ -170,37 +176,51 @@ mqtt_subscribed_predicate({_, Topic, ClientPid}, Next0, #est{bs = Bs} = St) ->
 
 mqtt_subscribed_predicate_browse(_DTopic, _DClientPid, _Next0, St, []) ->
     erlog_int:fail(St);
-mqtt_subscribed_predicate_browse(DTopic,
-                                 DClientPid,
-                                 Next0,
-                                 #est{bs = Bs,
-                                      vn = Vn,
-                                      cps = Cps} =
-                                     St,
-                                 [{RTopic, _Params} | OtherTopics]) ->
+mqtt_subscribed_predicate_browse(
+    DTopic,
+    DClientPid,
+    Next0,
+    #est{
+        bs = Bs,
+        vn = Vn,
+        cps = Cps
+    } =
+        St,
+    [{RTopic, _Params} | OtherTopics]
+) ->
     case erlog_int:unify(DTopic, RTopic, Bs) of
         {succeed, NewBs} ->
             ?INFO_MSG("Unified", []),
 
             FailFun =
-                fun(#cp{next = NextF,
+                fun(
+                    #cp{
+                        next = NextF,
                         bs = Bs0,
-                        vn = Vnf},
+                        vn = Vnf
+                    },
                     LCps,
-                    Lst) ->
-                   mqtt_subscribed_predicate_browse(DTopic,
-                                                    DClientPid,
-                                                    NextF,
-                                                    Lst#est{cps = LCps,
-                                                            bs = Bs0,
-                                                            vn = Vnf + 1},
-                                                    OtherTopics)
+                    Lst
+                ) ->
+                    mqtt_subscribed_predicate_browse(
+                        DTopic,
+                        DClientPid,
+                        NextF,
+                        Lst#est{
+                            cps = LCps,
+                            bs = Bs0,
+                            vn = Vnf + 1
+                        },
+                        OtherTopics
+                    )
                 end,
-            Cp = #cp{type = compiled,
-                     data = FailFun,
-                     next = Next0,
-                     bs = Bs,
-                     vn = Vn},
+            Cp = #cp{
+                type = compiled,
+                data = FailFun,
+                next = Next0,
+                bs = Bs,
+                vn = Vn
+            },
             erlog_int:prove_body(Next0, St#est{bs = NewBs, cps = [Cp | Cps]});
         _ ->
             ?INFO_MSG("NOT unified", []),
@@ -211,9 +231,8 @@ mqtt_subscribe_predicate({_, Client, Topic}, Next0, #est{bs = Bs} = St) ->
     Vars = [DClient, DTopic] = erlog_int:dderef([Client, Topic], Bs),
     case erlog:vars_in(Vars) of
         [] ->
-            case emqtt:subscribe(DClient, #{}, [{DTopic, [{nl, 1}]}]) of
+            case emqtt:subscribe(DClient, #{}, [{DTopic, [{nl, true}]}]) of
                 {ok, _Properties, _ReasonCodes} ->
-                    ?INFO_MSG("Subscribed results ~p   ~p", [_Properties, _ReasonCodes]),
                     erlog_int:prove_body(Next0, St);
                 {error, Reason} ->
                     ?INFO_MSG("Failled subscription reason ~p ", [Reason]),
@@ -223,7 +242,6 @@ mqtt_subscribe_predicate({_, Client, Topic}, Next0, #est{bs = Bs} = St) ->
             ?INFO_MSG("Publish call with unbinded ~p ", [Unbinded]),
             erlog_int:fail(St)
     end.
-
 
 mqtt_publish_predicate({_, Client, Topic, Payload, Options}, Next0, #est{bs = Bs} = St) ->
     Vars = [DClient, DTopic, DPayload] = erlog_int:dderef([Client, Topic, Payload], Bs),
@@ -239,12 +257,11 @@ mqtt_publish_predicate({_, Client, Topic, Payload, Options}, Next0, #est{bs = Bs
 
     case erlog:vars_in(Vars) of
         [] ->
-            FinalP = case DPayload of 
-                BinPayload when is_binary(BinPayload) -> BinPayload;
-                TermPayload ->
-                    list_to_binary(lists:flatten(io_lib:format("~p",[TermPayload])))
+            FinalP =
+                case DPayload of
+                    BinPayload when is_binary(BinPayload) -> BinPayload;
+                    TermPayload -> list_to_binary(lists:flatten(io_lib:format("~p", [TermPayload])))
                 end,
-
 
             case emqtt:publish(DClient, DTopic, #{}, FinalP, OptionsFinal) of
                 ok ->
@@ -287,8 +304,8 @@ perform_connect(OptionsList, AgentName, ParentPid) ->
             Port = proplists:get_value(port, Options2, 5748),
             ParentPid ! {mqtt_client_connected, Pid, Host, Port},
             ok;
-        {error, _Error} ->
-            ?ERROR_MSG("------->Error connectin mqtt client ~p", [_Error]),
+        {error, Error} ->
+            ?ERROR_MSG("------->Error connectin mqtt client ~p", [Error]),
 
             ok
     end.

@@ -4,10 +4,10 @@ goal(NameSpace::Goal) :-
      NameSpace::goal(Goal).
 
 goal(Goal) :-
+     log(info, "Goal : ~p", [Goal]),
     call(Goal).
 
 goal(Goal) :-
-     log(info, "Looking to satisfy Goal : ~p", [Goal]),
      action(Action, Prereq, Goal),
      satisfy_prereq(Prereq),
      call(Action).
@@ -15,7 +15,7 @@ goal(Goal) :-
 satisfy_prereq([]).
 
 satisfy_prereq([Goal1|Others]) :-
-     goal(Goal1),
+     call(Goal1),
      satisfy_prereq(Others).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Testing functionnality %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
