@@ -33,56 +33,19 @@ start(_StartType, _StartArgs) ->
             Ontolist = application:get_env(bbs, ontologies, []),
             bbs_ontology:register_ontologies(Ontolist),
 
-            %Children =
-            % [
-            %{?HORDEREG, [{name, ?BBS_BUBBLES_REG}, {keys, unique}]},
-            %{?HORDESUP,
-            %[{name, ?BBS_BUBLES_SUP},
-            %{strategy, one_for_one},
-            %{distribution_strategy, ?HORDISTRIB},
-            %{max_restarts, 100_000},
-            %{max_seconds, 1}]}],
-
-            %Opts = [{strategy, one_for_one}, {name, bbs_app_sup}],
-            %'Elixir.Supervisor':start_link(Children, Opts),
-
-            % {ok, _AppSupPid} = supervisor:start_link(Children, [{strategy, one_for_one}]),
-            % % Supervisation specs for root bubble
-            StartUpOntologies =
-                application:get_env(bbs, root_bubble_ontologies, default_root_bubble_ontologies()),
-            _MotherBubChildSpecs =
-                #agent{
-                    name = <<"root">>,
-                    parent = <<"">>,
-                    startup_ontologies = StartUpOntologies
-                },
-            % Root_bubble_specs =
-            %   #{id => root_bubble,
-            %     start => {bbs_agent, start_link, [MotherBubChildSpecs, <<"root_node">>]},
-            %     restart => permanent,
-            %     shutdown => infinity,
-            %     type => worker,
-            %     modules => [bbs_agent_sup]},
-
-            % % Next effectively start root bubble
             RootGrain = erleans:get_grain(
                 bbs_statefull_agent_grain, {<<"root">>, <<"root_node">>, null}
             ),
 
             bbs_statefull_agent_grain:new_ontology(RootGrain, default_root_bubble_ontologies()),
 
-            ?INFO_MSG("Rootgrain ~p", [RootGrain]),
-            %bbs_statefull_agent_grain:activate(RootGrain, MotherBubChildSpecs),
-            %bbs_statefull_agent_grain:new_event_async(RootGrain, "test"),
+            ?INFO_MSG("Started Rootgrain ~p", [RootGrain]),
+            
             {ok, self()};
         {error, Reason} ->
             ?ERROR_MSG("Couldn't initialise agents backend : ~p", [Reason]),
             {error, Reason}
     end.
-%?HORDESUP:start_child(?BBS_BUBLES_SUP, Root_bubble_specs).
-
-% {ok, _Pid} =
-%     ?HORDESUP:start_child(bbs_sup, Root_bubble_specs).
 
 stop(_State) ->
     ok.
