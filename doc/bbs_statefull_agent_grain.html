@@ -19,15 +19,19 @@
    Grain behavior used by erleans
 <h2><a name="index">Function Index</a></h2>
 <table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#activate-2">activate/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#call-1">call/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#deactivate-1">deactivate/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td></td></tr>
 <tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#handle_info-2">handle_info/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#new_event_async-2">new_event_async/2</a></td><td></td></tr>
 <tr><td valign="top"><a href="#new_event_sync-2">new_event_sync/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#new_ontology-2">new_ontology/2</a></td><td></td></tr>
+<tr><td valign="top"><a href="#node-1">node/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#placement-0">placement/0</a></td><td></td></tr>
 <tr><td valign="top"><a href="#provider-0">provider/0</a></td><td></td></tr>
 <tr><td valign="top"><a href="#save-1">save/1</a></td><td></td></tr>
+<tr><td valign="top"><a href="#state-1">state/1</a></td><td></td></tr>
 <tr><td valign="top"><a href="#stop-1">stop/1</a></td><td></td></tr>
 </table>
 
@@ -39,9 +43,15 @@
 <p> </p>
 </div>
 
+<h3 class="function"><a name="call-1">call/1</a></h3>
+<div class="spec">
+<p><tt>call(Ref) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
 <h3 class="function"><a name="deactivate-1">deactivate/1</a></h3>
 <div class="spec">
-<p><tt>deactivate(State) -&gt; any()</tt></p>
+<p><tt>deactivate(State::term()) -&gt; {ok, term()}</tt><br></p>
 <p> </p>
 </div>
 
@@ -59,7 +69,7 @@
 
 <h3 class="function"><a name="handle_info-2">handle_info/2</a></h3>
 <div class="spec">
-<p><tt>handle_info(X1, State) -&gt; any()</tt></p>
+<p><tt>handle_info(Info, State) -&gt; any()</tt></p>
 <p> </p>
 </div>
 
@@ -71,7 +81,19 @@
 
 <h3 class="function"><a name="new_event_sync-2">new_event_sync/2</a></h3>
 <div class="spec">
-<p><tt>new_event_sync(Ref::<a href="/home/yan/src/erleans/doc/erleans.html#type-grain_ref">erleans:grain_ref()</a>, Event::term()) -&gt; Reply::term()</tt><br></p>
+<p><tt>new_event_sync(Ref, Event) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="new_ontology-2">new_ontology/2</a></h3>
+<div class="spec">
+<p><tt>new_ontology(Ref, OtherOntos) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="node-1">node/1</a></h3>
+<div class="spec">
+<p><tt>node(Ref) -&gt; any()</tt></p>
 <p> </p>
 </div>
 
@@ -90,6 +112,12 @@
 <h3 class="function"><a name="save-1">save/1</a></h3>
 <div class="spec">
 <p><tt>save(Ref) -&gt; any()</tt></p>
+<p> </p>
+</div>
+
+<h3 class="function"><a name="state-1">state/1</a></h3>
+<div class="spec">
+<p><tt>state(X) -&gt; any()</tt></p>
 <p> </p>
 </div>
 
