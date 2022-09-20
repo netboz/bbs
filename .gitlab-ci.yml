@@ -4,6 +4,7 @@ variables:
   MIX_ENV: "test"
 
 before_script:
+  stage: pre
   ## Install ssh-agent if not already installed, it is required by Docker.
   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
   - eval $(ssh-agent -s)
