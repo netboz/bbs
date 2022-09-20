@@ -3,8 +3,7 @@ image: elixir:latest
 variables:
   MIX_ENV: "test"
 
-prepare-before_script:
-  stage: prepare
+before_script:
   ## Install ssh-agent if not already installed, it is required by Docker.
   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
   - eval $(ssh-agent -s)
