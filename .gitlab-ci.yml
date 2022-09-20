@@ -1,0 +1,23 @@
+image: elixir:latest
+
+variables:
+  MIX_ENV: "test"
+
+before_script:
+  ## Install ssh-agent if not already installed, it is required by Docker.
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+  - eval $(ssh-agent -s)
+  - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add - > /dev/null
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+
+  - mix local.rebar --force
+  - mix local.hex --force
+  - mix deps.get
+
+get_deps:
+  - mix deps.get
+  
+common_tests:
+  script:
+    - mix ct

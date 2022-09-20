@@ -1,0 +1,25 @@
+pipelines:
+  branches:
+    master:
+    - step:
+        image: elixir
+        caches:
+          - deps
+          - build
+        script:
+          - apt-get update
+          - apt-get install -y build-essential cmake erlang
+          - mix local.hex --force
+          - mix local.rebar --force
+          - MIX_ENV=pip mix deps.get
+          - mix test
+        services: 
+          - emqx
+ 
+definitions:
+  services: 
+    emqx: 
+      image: emqx
+  caches:
+    deps: deps
+    build: _build 
