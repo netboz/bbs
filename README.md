@@ -22,7 +22,7 @@ A multi-agents asynchronous simulation system
 
 ## Build
 
-    $ mix deps.get; mix compile
+    $ make build
 
 ## Run
 
