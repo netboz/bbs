@@ -17,10 +17,13 @@
 %% Prolog API
 
 -define(ERLANG_PREDS,
-        [%% Ontology related predicates
-         {{new_knowledge_base, 1}, ?MODULE, new_knowledge_base_predicate},
-         {{new_knowledge_base, 2}, ?MODULE, new_knowledge_base_predicate},
-         {{prolog_interpretation, 2}, ?MODULE, prolog_interpretation_predicate}]).
+    %% Ontology related predicates
+    [
+        {{new_knowledge_base, 1}, ?MODULE, new_knowledge_base_predicate},
+        {{new_knowledge_base, 2}, ?MODULE, new_knowledge_base_predicate},
+        {{prolog_interpretation, 2}, ?MODULE, prolog_interpretation_predicate}
+    ]
+).
 
 %==============================================================================
 % Exports
@@ -50,11 +53,11 @@ external_predicates() ->
 %% @end
 %%------------------------------------------------------------------------------
 
-new_knowledge_base_predicate({_Atom, NameSpace}, Next0, #est{} = St) ->
-    new_knowledge_base_predicate({_Atom, NameSpace, bbs_db_ets}, Next0, #est{} = St);
-new_knowledge_base_predicate({_Atom, NameSpace, Db_mod}, Next0, #est{} = St) ->
+new_knowledge_base_predicate({Atom, NameSpace}, Next0, #est{} = St) ->
+    new_knowledge_base_predicate({Atom, NameSpace, bbs_db_ets}, Next0, #est{} = St);
+new_knowledge_base_predicate({_Atom, NameSpace, DbMod}, Next0, #est{} = St) ->
     AgentName = get(agent_name),
-    case bbs_ontology:create_kb_store(NameSpace, AgentName, Db_mod) of
+    case bbs_ontology:create_kb_store(NameSpace, AgentName, DbMod) of
         {ok, Est} ->
             case bbs_agent:store_ontology_state_on_namespace(NameSpace, Est) of
                 undefined ->
@@ -72,9 +75,11 @@ new_knowledge_base_predicate({_Atom, NameSpace, Db_mod}, Next0, #est{} = St) ->
 %  Utility predicates
 %-------------------------------------------------------------------------------
 
-prolog_interpretation_predicate({_Atom, PrologString, PrologTerms},
-                                Next0,
-                                #est{bs = Bs, vn = Vn} = St) ->
+prolog_interpretation_predicate(
+    {_Atom, PrologString, PrologTerms},
+    Next0,
+    #est{bs = Bs, vn = Vn} = St
+) ->
     DPrologString = erlog_int:dderef(PrologString, Bs),
     DPrologTerms = erlog_int:dderef(PrologTerms, Bs),
     ?INFO_MSG("Starting convertion predicate", []),
@@ -94,10 +99,12 @@ prolog_interpretation_predicate({_Atom, PrologString, PrologTerms},
                     {Goal1, NewBs, NewVn} = erlog_int:initial_goal(Goal0, Bs, Vn),
 
                     %% Convertion went fine
-                    erlog_int:unify_prove_body(DPrologTerms,
-                                               Goal1,
-                                               Next0,
-                                               St#est{bs = NewBs, vn = NewVn})
+                    erlog_int:unify_prove_body(
+                        DPrologTerms,
+                        Goal1,
+                        Next0,
+                        St#est{bs = NewBs, vn = NewVn}
+                    )
             end;
         _ ->
             %% Prolog String is either unbinded or something else than a string
@@ -130,7 +137,8 @@ vars_in(Term) ->
     vars_in(Term, orddict:new()).
 
 vars_in({'_'}, Vs) ->
-    Vs;                       %Never in!
+    %Never in!
+    Vs;
 vars_in({Name} = Var, Vs) ->
     orddict:store(Name, Var, Vs);
 vars_in(Struct, Vs) when is_tuple(Struct) ->
@@ -152,4 +160,5 @@ unlistify([G | Gs]) ->
 unlistify([]) ->
     true;
 unlistify(G) ->
-    G.                              %In case it wasn't a list.
+    %In case it wasn't a list.
+    G.

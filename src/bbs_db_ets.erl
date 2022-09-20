@@ -19,8 +19,10 @@
 %% new(InitArgs) -> Db.
 
 new([NameSpace, AgentId]) ->
-    Db = ets:new(binary_to_atom(iolist_to_binary([AgentId, "_", NameSpace]), utf8),
-                 [set, protected, {keypos, 1}]),
+    Db = ets:new(
+        binary_to_atom(iolist_to_binary([AgentId, "_", NameSpace]), utf8),
+        [set, protected, {keypos, 1}]
+    ),
     {NameSpace, Db}.
 
 %% add_built_in(Functor, Database) -> NewDatabase.
@@ -48,29 +50,24 @@ add_compiled_proc({NameSpace, Db}, Functor, M, F) ->
 %%  We DON'T check format and just put it straight into the database.
 
 asserta_clause({NameSpace, Db}, Functor, Head, Body) ->
-    case ets:lookup(Db, Functor) of
-        [{_, built_in}] ->
-            error;
-        [{_, code, _}] ->
-            error;
-        [{_, clauses, Tag, Cs}] ->
-            ets:insert(Db, {Functor, clauses, Tag + 1, [{Tag, Head, Body} | Cs]}),
-            {ok, {NameSpace, Db}};
-        [] ->
-            ets:insert(Db, {Functor, clauses, 1, [{0, Head, Body}]}),
-            {ok, {NameSpace, Db}}
-    end.
+    assert_clause_generic({NameSpace, Db}, Functor, Head, Body, a).
 
 assertz_clause({NameSpace, Db}, Functor, Head, Body) ->
-    case ets:lookup(Db, Functor) of
-        [{_, built_in}] ->
+    assert_clause_generic({NameSpace, Db}, Functor, Head, Body, z).
+
+assert_clause_generic({NameSpace, Db}, Functor, Head, Body, Pos) ->
+    case {ets:lookup(Db, Functor), Pos} of
+        {[{_, built_in}], _} ->
             error;
-        [{_, code, _}] ->
+        {[{_, code, _}], _} ->
             error;
-        [{_, clauses, Tag, Cs}] ->
+        {[{_, clauses, Tag, Cs}], z} ->
             ets:insert(Db, {Functor, clauses, Tag + 1, Cs ++ [{Tag, Head, Body}]}),
             {ok, {NameSpace, Db}};
-        [] ->
+        {[{_, clauses, Tag, Cs}], a} ->
+            ets:insert(Db, {Functor, clauses, Tag + 1, [{Tag, Head, Body} | Cs]}),
+            {ok, {NameSpace, Db}};
+        {[], _} ->
             ets:insert(Db, {Functor, clauses, 1, [{0, Head, Body}]}),
             {ok, {NameSpace, Db}}
     end.
@@ -89,7 +86,8 @@ retract_clause({NameSpace, Db}, F, Ct) ->
             ets:insert(Db, {F, clauses, Nt, lists:keydelete(Ct, 1, Cs)}),
             {ok, {NameSpace, Db}};
         [] ->
-            {ok, {NameSpace, Db}}                             %Do nothing
+            %Do nothing
+            {ok, {NameSpace, Db}}
     end.
 
 %% abolish_clauses(Database, Functor) -> NewDatabase.
@@ -105,7 +103,8 @@ abolish_clauses({NameSpace, Db}, Func) ->
             ets:delete(Db, Func),
             {ok, {NameSpace, Db}};
         [] ->
-            {ok, {NameSpace, Db}}                              %Do nothing
+            %Do nothing
+            {ok, {NameSpace, Db}}
     end.
 
 %% get_procedure(Db, Functor) ->
@@ -131,24 +130,31 @@ get_procedure({_NameSpace, Db}, Functor) ->
 get_procedure_type({_NameSpace, Db}, Functor) ->
     case ets:lookup(Db, Functor) of
         [{_, built_in}] ->
-            built_in;             %A built-in
+            %A built-in
+            built_in;
         [{_, code, _}] ->
-            compiled;               %Compiled (perhaps someday)
+            %Compiled (perhaps someday)
+            compiled;
         [{_, clauses, _, _}] ->
-            interpreted;       %Interpreted clauses
+            %Interpreted clauses
+            interpreted;
         [] ->
-            undefined                         %Undefined
+            %Undefined
+            undefined
     end.
 
 %% get_interp_functors(Database) -> [Functor].
 
 get_interpreted_functors({_NameSpace, Db}) ->
     NewDb =
-        ets:foldl(fun ({Func, clauses, _, _}, Fs) ->
-                          [Func | Fs];
-                      (_, Fs) ->
-                          Fs
-                  end,
-                  [],
-                  Db),
+        ets:foldl(
+            fun
+                ({Func, clauses, _, _}, Fs) ->
+                    [Func | Fs];
+                (_, Fs) ->
+                    Fs
+            end,
+            [],
+            Db
+        ),
     NewDb.

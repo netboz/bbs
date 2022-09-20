@@ -1,11 +1,11 @@
-{application,
- bbs,
- [{description, "An OTP application"},
-  {vsn, "0.1.0"},
-  {registered, []},
-  {mod, {bbs_app, []}},
-  {applications, [kernel, stdlib, sasl, lager, erlog, zuuid, swarm, gproc, emqtt]},
-  {env, []},
-  {modules, []},
-  {licenses, ["Apache 2.0"]},
-  {links, []}]}.
+{application, bbs, [
+    {description, "An OTP application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {bbs_app, []}},
+    {applications, [kernel, stdlib, sasl, lager, erlog, quickrand, uuid, emqtt, lasp, partisan, erleans]},
+    {env, []},
+    {modules, []},
+    {licenses, ["Apache 2.0"]},
+    {links, []}
+]}.

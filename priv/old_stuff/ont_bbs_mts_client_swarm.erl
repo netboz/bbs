@@ -45,7 +45,7 @@ join_predicate({_, CcName, Ontology}, Next0, #est{bs = Bs} = St) ->
 
 join_predicate({_} = VarCCName, DOntology, Next0, #est{bs = Bs} = St) ->
     Me = get(agent_name),
-    CCName = zuuid:v4(),
+    CCName =  uuid:get_v4_urandom(),
     process_new_cc(VarCCName,DOntology, Next0, St#est{bs = erlog_int:add_binding()});
 
 join_predicate(VarCCName, DOntology, Next0, St#est{bs = Bs}) ->

@@ -28,9 +28,9 @@ start_link() ->
 %%                  modules => modules()}   % optional
 init([]) ->
     SupFlags =
-        #{strategy => one_for_all,
-          intensity => 10,
-          period => 1},
+        #{
+            strategy => one_for_all,
+            intensity => 10,
+            period => 1
+        },
     {ok, {SupFlags, []}}.
-
-

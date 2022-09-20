@@ -7,7 +7,13 @@
 
 -record(agent, {
 	name :: binary(), 
-	tree_node :: term(), 
+	node :: term(), 
 	parent :: binary(),
-	startup_ontologies = [] :: list()
+	startup_ontologies = [] :: list(term())
 	}).
+
+-record(ontology, {
+    namespace :: binary(),
+    parameters :: list(),
+    storage :: atom()
+}).

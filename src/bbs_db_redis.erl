@@ -9,7 +9,10 @@
 -module(bbs_db_redis).
 -author("yan").
 
--record(redis_id, {namespace, agent_name}).
+%%-record(redis_id, {namespace, agent_name}).
+
+
+
 
 %% API
 -export([]).
