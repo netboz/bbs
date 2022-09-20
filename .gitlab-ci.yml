@@ -12,7 +12,7 @@ before_script:
   - chmod 700 ~/.ssh
 
 deps-get:
-  stage: pre
+  stage: .pre
   script:
     - make deps
 
