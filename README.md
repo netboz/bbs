@@ -31,7 +31,7 @@ A multi-agents asynchronous simulation system
 
 To have a quick try locally you can use this command :
 
-    $ iex --sname bbs  -S mix
+    $ make shell
 
 Build and Run configuration will be provided shortly.
 
