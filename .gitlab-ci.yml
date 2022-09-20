@@ -11,10 +11,14 @@ before_script:
   - mkdir -p ~/.ssh
   - chmod 700 ~/.ssh
 
-  - mix local.rebar --force
-  - mix local.hex --force
-  - mix deps.get
-  
+deps:
+  script:
+    - make deps
+
+dyalize:
+  script:
+    - make dyalizer
+
 common_tests:
   script:
-    - rebar3 test
+    - make test
