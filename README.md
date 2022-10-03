@@ -29,6 +29,11 @@ A multi-agents asynchronous simulation system
 
 !! current messaging protocol for agents is currently based on MQTT. Hence you need a local mqtt server running, with anonymous access allowed at the moment ( sic ) !!
 
+To quickly run a broker locally ( be carefull about security concerns, we disclaim any dommage ) :
+```
+ sudo docker run -d --name emqx -p 18083:18083 -p 1883:1883 emqx/emqx:latest
+```
+
 To have a quick try locally you can use this command :
 
     $ make shell
