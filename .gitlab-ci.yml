@@ -1,4 +1,4 @@
-image: erlang:24-alpine
+image: elixir
 
 variables:
   MIX_ENV: "test"
