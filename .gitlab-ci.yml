@@ -5,7 +5,7 @@ variables:
 
 before_script:
   ## Install ssh-agent if not already installed, it is required by Docker.
-  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+  - 'which ssh-agent || ( apt update -y && apt install openssh-client git -y )'
   - eval $(ssh-agent -s)
   - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add - > /dev/null
   - mkdir -p ~/.ssh
