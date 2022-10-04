@@ -37,10 +37,12 @@ start(_StartType, _StartArgs) ->
                 bbs_statefull_agent_grain, {<<"root">>, <<"root_node">>, null}
             ),
 
-            bbs_statefull_agent_grain:new_ontology(RootGrain, default_root_bubble_ontologies()),
+            RootAgentOntologies =
+                application:get_env(bbs, root_bubble_ontologies, default_root_bubble_ontologies()),
+            bbs_statefull_agent_grain:new_ontology(RootGrain, RootAgentOntologies),
 
             ?INFO_MSG("Started Rootgrain ~p", [RootGrain]),
-            
+
             {ok, self()};
         {error, Reason} ->
             ?ERROR_MSG("Couldn't initialise agents backend : ~p", [Reason]),
