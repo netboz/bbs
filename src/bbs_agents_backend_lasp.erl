@@ -5,7 +5,7 @@
 %%% @end
 %%%-----------------------------------------------------------------------------
 
--module(bbs_registry_lasp).
+-module(bbs_agents_backend_lasp).
 -author("yan").
 
 -behavior(bbs_agents_backend).

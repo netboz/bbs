@@ -6,7 +6,8 @@
 -define(ONTO_STORE, onto_store).
 
 -record(agent, {
-	name :: binary(), 
+	%% Unique identifier for this agent on this node
+	id :: binary(), 
 	node :: term(), 
 	parent :: binary(),
 	startup_ontologies = [] :: list(term())

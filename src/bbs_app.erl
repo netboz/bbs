@@ -17,7 +17,7 @@ start(_StartType, _StartArgs) ->
     register(bbs, self()),
 
     {AgentsBackendMod, AgentsBackendModInitParameters} = application:get_env(
-        bbs, registry_module, {bbs_registry_lasp, #{}}
+        bbs, registry_module, {bbs_agents_backend_lasp, #{}}
     ),
     persistent_term:put(agent_backend_mod, AgentsBackendMod),
 
